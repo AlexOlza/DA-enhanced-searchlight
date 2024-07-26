@@ -35,7 +35,7 @@ Please note that the actual experimentation was heavily parallelized; running th
 The number of iterations for statistical validation can be reduced by changing the value of `NITER` to accelerate the script, without guarantee of obtaining the same statistical insights from the paper. 
 With `NITER=1`, the total time is ... using 24 CPUs.
 
-The fMRI data must be placed under a directory named `data` with the following structure, where `subject_id` goes from 1 to 18: 
+The fMRI data must be placed under a directory named `data` with the following structure, where `subject_id` goes from 1 to 18 in the paper:
 
 <details>
 
