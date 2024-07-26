@@ -4,12 +4,12 @@ This repository contains the full code for the paper "Domain Adaptation-Enhanced
 The paper introduces the :sparkles: DA-enhanced searchlight :sparkles:, which integrates Domain Adaptation (DA) into the searchlight procedure ([Kriegeskorte et al., 2006](https://www.pnas.org/doi/10.1073/pnas.0600244103)) to increase the accuracy of
 local neighborhood classifiers for fMRI data when applied to scenarios with a distribution shift.
 
-# Research contributions :boom:
+## Research contributions :boom:
 
 - Evaluation of several DA methods in a cross-domain brain decoding task, in real fMRI data
 - Integration of DA into the searchlight procedure
 
-# Software contributions :computer:
+## Software contributions :computer:
 
 - A function that performs DA-enhanced searchlight, inspired in the [Nilearn](https://nilearn.github.io/stable/index.html) searchlight and using [ADAPT](https://github.com/adapt-python/adapt) DA estimators.
 
