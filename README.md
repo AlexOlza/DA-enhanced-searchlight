@@ -1,6 +1,17 @@
 # Domain Adaptation-Enhanced Searchlight: Enabling brain decoding from visual perception to mental imagery
 
 This repository contains the full code for the paper "Domain Adaptation-Enhanced Searchlight: Enabling brain decoding from visual perception to mental imagery" (Olza A., Soto D., Santana R., 2024).
+The paper introduces the :sparkles: DA-enhanced searchlight :sparkles:, which integrates Domain Adaptation (DA) into the searchlight procedure ([Kriegeskorte et al., 2006](https://www.pnas.org/doi/10.1073/pnas.0600244103)) to increase the accuracy of
+local neighborhood classifiers for fMRI data when applied to scenarios with a distribution shift.
+
+# Research contributions :boom:
+
+- Evaluation of several DA methods in a cross-domain brain decoding task, in real fMRI data
+- Integration of DA into the searchlight procedure
+
+# Software contributions :computer:
+
+- A function that performs DA-enhanced searchlight, inspired in the [Nilearn](https://nilearn.github.io/stable/index.html) searchlight and using [ADAPT](https://github.com/adapt-python/adapt) DA estimators.
 
 ## Repository structure :seedling:
 
@@ -30,7 +41,7 @@ FSL
 
 ## Reproducibility :crystal_ball:
 `reproduce.sh` reproduces all the results and figures in the paper with parameters `NITER=100`, `n_subj=18` and `n_reg=14`. 
-Please note that the actual experimentation was heavily parallelized; running this script sequentially would take multiple days. 
+Please note that the actual experimentation was heavily parallelized; running this script sequentially would take several weeks. 
 
 The number of iterations for statistical validation can be reduced by changing the value of `NITER` to accelerate the script, without guarantee of obtaining the same statistical insights from the paper. 
 With `NITER=1`, the total time is ... using 24 CPUs.
