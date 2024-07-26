@@ -9,8 +9,8 @@ from pathlib import Path
 
 if __name__=='__main__':
 	OUTPATH = '../../results/RTLC'
-	subjects = sorted([S.split('/')[-1] for S in glob.glob(os.path.join(OUTPATH,'IFGOperc/perception_imagery','*'))])
-	allregions=sorted([R.split('/')[-1].split('.')[0] for R in glob.glob(OUTPATH + '/*')])
+	allregions=sorted([R.split('/')[-1].split('.')[0] for R in glob.glob(OUTPATH + '/*') if os.path.isdir(R)])
+	subjects = sorted([S.split('/')[-1] for S in glob.glob(os.path.join(OUTPATH,f'{allregions[0]}/perception_imagery','*'))])
 	fname = os.path.join(OUTPATH,'allresults_individualrois.csv')
 	source_domain = 'perception'
 	target_domain='imagery' 
@@ -18,13 +18,9 @@ if __name__=='__main__':
 	allresults= pd.DataFrame()
 	base1= pd.DataFrame()
 	for region_name in allregions:
-	    # results = read_all( region_name, attrs)
-	    # results = results.loc[results.Method.isin(['RTLC','RTLC_LR'])]
 	    baseline_region = read_baseline(region_name, OUTPATH='../../results/DA_comparison')
 	    baseline_region = baseline_region.loc[baseline_region.Domain!=target_domain+'_tr']
-	    # results['Region']= region_name
 	    baseline_region['Region']= region_name
-	    # allresults = pd.concat([allresults,results])
 	    base1= pd.concat([base1, baseline_region])
 	base= pd.DataFrame()
 	for region_name in allregions:
