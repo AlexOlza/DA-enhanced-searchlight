@@ -4,6 +4,11 @@
 Created on Wed Oct  4 14:41:18 2023
 
 @author: alexolza
+
+This script fits RTLC with data from a particular ROI and subject.
+RTLC is then evaluated in the independent samples from target domain.
+This process is repeated for NITER data partitions.
+
 Usage: python regularTransfer.py source_domain:str target_domain:str subject:int region:int(-1 to use all regions) NITER:int
 """
 
@@ -60,7 +65,7 @@ subjects = sorted(
 allregions = sorted(
     [
         R.split("/")[-1].split(".")[0]
-        for R in glob.glob(os.path.join("../data", "perception/1", "*.npy"))
+        for R in glob.glob(os.path.join("../data", f"perception/{subjects[0]}", "*.npy"))
     ]
 )
 

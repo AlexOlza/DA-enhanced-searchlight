@@ -5,9 +5,10 @@ import pandas as pd
 import os
 import re
 from nilearn.maskers import NiftiMasker
-from nilearn.image import index_img, new_img_like
+from nilearn.image import index_img
 
-def load_data(domain, subject, rootpath='..' , drop_resting_state=True):
+def load_data(domain, subject, rootpath='..' , drop_resting_state=True): 
+    # Loads the complete whole-brain dataset for a domain and subject
     data_dir = f'{rootpath}/data/whole_brain/{domain}/{subject}/'
     event_dir = f'{rootpath}/data/{domain}/{subject}/events.csv'
     events = pd.read_csv(event_dir, usecols=['trial_idx','run','target_category'])

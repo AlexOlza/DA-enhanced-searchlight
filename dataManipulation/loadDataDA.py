@@ -9,8 +9,7 @@ from sklearn.model_selection import  train_test_split
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-from matplotlib.patches import Patch
-from sklearn.preprocessing import OrdinalEncoder
+
 class DomainAdaptationData:
     def __init__(self, Source, Target):
         self.Source_train_X= Source['train_X']
@@ -41,7 +40,7 @@ class DomainAdaptationSplitter:
     def __init__(self, cv, n_iter):
         self.__name__='DomainAdaptationSplitter'
         self.n_iter = n_iter
-        self.cv = cv
+        self.cv = cv #In our experimental design, this will be StratifiedKFold
         self.Source_X = None
         self.Source_y = None
         self.Source_groups = None
@@ -51,7 +50,8 @@ class DomainAdaptationSplitter:
         self.Target_n = None
         
     def split(self, Source_X, Source_y, Source_groups, Target_X, Target_y, Target_groups, Target_n, random_state=None):
-        
+        # This will return a dictionary with arrays of lenthg self.n_iter as values.
+        # Each array contains the self.n_iter data partitions to be used.
         self.Source_X =Source_X
         self.Source_y =Source_y
         self.Source_groups =Source_groups
@@ -76,19 +76,15 @@ class DomainAdaptationSplitter:
             Target_train_X,Target_train_y = Target_X[Final_Target_train_index], Target_y[Final_Target_train_index]
             
             groups_to_discard = Target_groups[Final_Target_train_index]
-            # print(len(Source_train_index))
-            # print(len(Source_test_index))
-            # print(Target_test_index)
-            # print(Final_Target_train_index)
-            # print(groups_to_discard)
             indexes_to_append_to_test = [i for i in list(set(Final_Target_train_index)-set(Target_train_index)) if Target_groups[i] not in groups_to_discard]
             Final_Target_test_index = list(Target_test_index) + list(indexes_to_append_to_test)
-            # print(Final_Target_test_index)
+            
             Target_test_X,Target_test_y = Target_X[Final_Target_test_index], Target_y[Final_Target_test_index]
             
             Target_train_g, Target_test_g = Target_groups[Final_Target_train_index], Target_groups[Final_Target_test_index]
             Source_train_g, Source_test_g = Source_groups[Source_train_index], Source_groups[Source_test_index]
             
+            # These assertions guarantee no data leackage for our experimental design.
             assert len(set(Source_test_g).intersection(set(Source_train_g)))==0 
             assert len(set(Target_test_g).intersection(set(Target_train_g)))==0 
             

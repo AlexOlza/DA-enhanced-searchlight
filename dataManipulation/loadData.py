@@ -23,10 +23,9 @@ random.seed(0)
 np.random.seed(0)
 
 DATAPATH = '../data'
-    
-class MyFullDataset():
-    def __init__(self, domain, subject, regions, remove_noise=True, train=True, all_trials=False, 
-                 data_dir=DATAPATH):
+
+class MyFullDataset(): # Loads the whole dataset for a domain, subject and region
+    def __init__(self, domain, subject, regions, remove_noise=True, data_dir=DATAPATH):
         if isinstance(regions, str):
             regions = [regions]
         self.regions=regions 

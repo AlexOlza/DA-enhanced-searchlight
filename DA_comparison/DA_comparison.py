@@ -5,6 +5,11 @@ Created on Mon Sep 18 16:40:07 2023
 
 @author: alexolza
 
+This script fits a DA method with data from a particular ROI and subject.
+The DA method is then evaluated in the independent samples from target domain.
+This process is repeated for NITER data partitions.
+The underlying estimator is Logistic Regression.
+
 Usage: python DA_comparison.py source_domain:str target_domain:str subject:int method:str region:int(-1 to use all regions) NITER:int
 """
 
@@ -58,14 +63,12 @@ class RegularTransferLC(RegularTransferLR):
 """ VARIABLE DEFINITION """
 
 subjects = sorted([S.split('/')[-1] for S in glob.glob(os.path.join('../data','perception','*'))])
-allregions=sorted([R.split('/')[-1].split('.')[0] for R in glob.glob(os.path.join('../data','perception/1','*.npy'))])
-methods = [PRED, FA, CORAL, SA, fMMD,
-           LDM, KLIEP, KMM, ULSIF, RULSIF, NearestNeighborsWeighting, IWC, IWN, BalancedWeighting, TrAdaBoost, RegularTransferLC]
+allregions=sorted([R.split('/')[-1].split('.')[0] for R in glob.glob(os.path.join(f'../data/perception/{subjects[0]}','*.npy'))])
+methods = [PRED, FA, SA,
+           KMM, ULSIF, RULSIF, NearestNeighborsWeighting, IWN, BalancedWeighting, TrAdaBoost, RegularTransferLC]
 method_names = [m.__name__ for m in methods]
 methods = {n:m for n,m in zip(method_names,methods)}
 parameters = {m : {} for m in method_names}
-parameters['IWC'] = {'classifier':LogisticRegression(), 'kernel':'polynomial'}   
-parameters['KLIEP'] = {'kernel':'polynomial'}
 
 source_domain =  sys.argv[1]
 target_domain =  sys.argv[2]
@@ -100,7 +103,7 @@ params = parameters[method]
 
 
 print(f'Fitting {method} for subject {subject} in region {region_name}...')
-x=range(10,110, 10)
+Nts=range(10,110, 10)
 
 if not Path(os.path.join(outdir, f'DA_{method}.csv')).is_file():
     remove_noise=True
@@ -110,10 +113,10 @@ if not Path(os.path.join(outdir, f'DA_{method}.csv')).is_file():
     
     
     balanced_accuracy, balanced_accuracy_im, balanced_accuracy_imtr=pd.DataFrame(),pd.DataFrame(),pd.DataFrame()
-    for shots in tqdm(x):
+    for Nt in tqdm(Nts):
         balanced_accuracy_s,balanced_accuracy_im_s, balanced_accuracy_imtr_s=[],[],[]
         s = DomainAdaptationSplitter(StratifiedGroupKFold, NITER)
-        Source, Target=s.split(perc_X, perc_y, perc_g,imag_X, imag_y, imag_g,shots,shots)# last arg is random seed
+        Source, Target=s.split(perc_X, perc_y, perc_g,imag_X, imag_y, imag_g,Nt,Nt)# last arg is random seed
         d = DomainAdaptationData(Source, Target)
         for i in range(NITER):
             
@@ -123,16 +126,16 @@ if not Path(os.path.join(outdir, f'DA_{method}.csv')).is_file():
     
             train_label = np.ravel(d.Source_train_y[i])  
             test_label = np.ravel(d.Source_test_y[i])
-            # We select a number "shots" of instances from the target domain (usually imagery)
+            # We select a number "Nt" of instances from the target domain (usually imagery)
             I_train, I_test, IL_train, IL_test = d.Target_train_X[i], d.Target_test_X[i], d.Target_train_y[i], d.Target_test_y[i]
-            # I_train contains "shots" instances. Those are passed to the ADAPT method
+            # I_train contains "Nt" instances. Those are passed to the ADAPT method
            
             
             if method=='RegularTransferLC':
             	# Parameter-based methods from the ADAPT library require an estimator that has been previously fit to the source domain
                 estimator.fit(train,train_label)
     
-                clf = DA_method( estimator,verbose=0,Xt=I_train,yt=IL_train, **params)   # clf recieves "shots" instances of the target domain         
+                clf = DA_method( estimator,verbose=0,Xt=I_train,yt=IL_train, **params)   # clf recieves "Nt" instances of the target domain         
                 clf.fit(I_train, IL_train)
             else:
                 clf = DA_method(estimator = estimator,verbose=0,Xt=I_train,yt=IL_train, **params)   
@@ -155,9 +158,9 @@ if not Path(os.path.join(outdir, f'DA_{method}.csv')).is_file():
             balanced_accuracy_im_s.append(balanced_accuracy_score( IL_test, aux_ys_imag))
             balanced_accuracy_imtr_s.append(balanced_accuracy_score( IL_train, aux_ys_imag_tr))
             
-        balanced_accuracy[shots]=balanced_accuracy_s      
-        balanced_accuracy_im[shots]=balanced_accuracy_im_s
-        balanced_accuracy_imtr[shots]=balanced_accuracy_imtr_s
+        balanced_accuracy[Nt]=balanced_accuracy_s      
+        balanced_accuracy_im[Nt]=balanced_accuracy_im_s
+        balanced_accuracy_imtr[Nt]=balanced_accuracy_imtr_s
     
     balanced_accuracy['Domain']=source_domain
     balanced_accuracy_im['Domain']=target_domain

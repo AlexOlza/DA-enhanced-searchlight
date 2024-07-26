@@ -1,6 +1,14 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+"""
+@author: alexolza
+
+Contains functions that run a DA-enhanced searchlight in parallel.
+
+"""
+
+
 from nilearn import image
 import os
 import numpy as np
@@ -19,6 +27,7 @@ from nilearn.image.resampling import coord_transform
 from nilearn.decoding.searchlight import search_light, GroupIterator,_group_iter_search_light
 
 def searchlight_cv_DA(source_events, target_events, source_groups, target_groups, n_iter=100, target_n=100, random_state = 0, splitter=StratifiedGroupKFold):
+    # 
     Source_train_ys, Source_test_ys, Source_train_gs, Source_test_gs =[],[],[],[]
     Target_train_ys, Target_test_ys, Target_train_gs, Target_test_gs =  [],[],[],[]
     Source_test_is, Target_test_is, Source_train_is, Target_train_is =[],[],[],[]

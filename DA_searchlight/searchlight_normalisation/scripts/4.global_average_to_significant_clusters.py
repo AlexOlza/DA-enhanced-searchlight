@@ -28,7 +28,6 @@ for filename in files:
     fmri_data = fmri_data + 0.5
     
     clusters_file = f"{str(file).split('.nii.gz')[0]}OneSampT_tfce_corrp_tstat1.nii.gz"
-    #clusters_file = str(current_dir / clusters_file)
     clusters_img = nib.load(clusters_file)
     clusters_data = clusters_img.get_fdata().copy()
     projected_img = fmri_data.copy()
