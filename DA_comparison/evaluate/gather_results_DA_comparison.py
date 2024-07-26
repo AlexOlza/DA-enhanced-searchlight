@@ -11,12 +11,12 @@ def read_baseline(region_name='all_regions', source_domain='perception',target_d
     baseline=pd.DataFrame()
     path = os.path.join(OUTPATH, region_name, f'{source_domain}_{target_domain}', '*')
     Subjects = [s.split('/')[-1] for s in glob.glob(path)] 
+    
     for subject in Subjects: 
         result_path = os.path.join(OUTPATH, region_name, f'{source_domain}_{target_domain}', subject, f'baseline{withtgt}.csv')
         results = pd.read_csv(result_path, index_col=0)
         results['Subject']=subject
-        baseline=pd.concat([baseline,results])
-    baseline.Subject = baseline.Subject.apply(lambda s: s.split('_')[-1].capitalize())    
+        baseline=pd.concat([baseline,results])   
     return baseline
 def read_all(region_name='all_regions', source_domain='perception',target_domain='imagery', OUTPATH=OUTPATH):
     allresults=pd.DataFrame()
@@ -36,8 +36,7 @@ def read_all(region_name='all_regions', source_domain='perception',target_domain
             results['Subject']=subject
             results['Method']=m
             allresults=pd.concat([allresults,results])
-    allresults.Method = allresults.Method.apply(lambda m: isupper(m))
-    allresults.Subject = allresults.Subject.apply(lambda s: s.split('_')[-1].capitalize())    
+    allresults.Method = allresults.Method.apply(lambda m: isupper(m))  
     return allresults
 if __name__=='__main__':
 	fname = os.path.join(OUTPATH,'allresults_DA_comparison.csv')
