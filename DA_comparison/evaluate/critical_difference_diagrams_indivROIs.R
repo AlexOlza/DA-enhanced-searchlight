@@ -28,7 +28,7 @@ col='X100'
 allresults <- read.csv(allresultspath,header=TRUE)
 #allresults$Method <- paste(allresults$Method , allresults$Region,sep='-')
 
-if (! dir.exists(savefigpath)) dir.create(file.path(savefigpath))
+if (! dir.exists(savefigpath)) dir.create(file.path(savefigpath),recursive = TRUE)
 
 
 # 1) AGGREGATE OVER SUBJECT

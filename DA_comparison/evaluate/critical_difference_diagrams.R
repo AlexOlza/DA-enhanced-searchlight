@@ -22,7 +22,7 @@ source("aux_CD_diagrams.R", encoding = "UTF-8")
 
 allresultspath <- '../../results/DA_comparison/allresults_DA_comparison.csv' 
 savefigpath <-'../../figures/CD_diagrams/'
-if (! dir.exists(savefigpath)) dir.create(file.path(savefigpath))
+if (! dir.exists(savefigpath)) dir.create(file.path(savefigpath),recursive = TRUE)
 col='X100'
 allresults <- read.csv(allresultspath,header=TRUE)
 allresults <- allresults[allresults$Domain=='imagery',]
