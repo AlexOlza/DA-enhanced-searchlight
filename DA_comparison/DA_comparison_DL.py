@@ -188,7 +188,7 @@ if not Path(os.path.join(outdir, f'DA_{method}.csv')).is_file():
                                   optimizer_enc=tf.keras.optimizers.legacy.Adam(0.0001),
                                   random_state=random_state)
 
-                clf.fit(X=train_ICA,y=train_label, epochs=200, verbose=1)  
+                clf.fit(X=train_ICA,y=train_label, epochs=200, verbose=0)  
             else:
                 assert False, 'Unrecognised DA method'     
             
