@@ -210,7 +210,7 @@ if not Path(os.path.join(outdir, f'DA_{method}.csv')).is_file():
     balanced_accuracy_im['Domain']=target_domain
     balanced_accuracy_imtr['Domain']=target_domain+'_tr'
     results= pd.concat([balanced_accuracy,balanced_accuracy_im,balanced_accuracy_imtr])
-    # results.to_csv(os.path.join(outdir, f'DA_{method}.csv'))
+    results.to_csv(os.path.join(outdir, f'DA_{method}.csv'))
     
     print(f'Done {subject}: ',time()-t0)
 
