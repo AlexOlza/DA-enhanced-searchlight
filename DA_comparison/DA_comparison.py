@@ -16,6 +16,7 @@ Usage: python DA_comparison.py source_domain:str target_domain:str subject:int m
 """ THIRD PARTY IMPORTS """
 import sys
 import os
+import re
 sys.path.append('..')
 import logging
 logging.getLogger("tensorflow").setLevel(logging.ERROR)
@@ -40,8 +41,7 @@ if not sys.warnoptions:
     os.environ["PYTHONWARNINGS"] = "ignore" # Also affect subprocesses
 
 """ OWN IMPORTS """
-
-from dataManipulation.loadDataDA import DomainAdaptationData, DomainAdaptationSplitter
+from dataManipulation.loadDataDA import DomainAdaptationData, DomainAdaptationSplitter, DomainAdaptationGOD
 from dataManipulation.loadData import MyFullDataset
 from adapt.utils import check_arrays
                          
@@ -61,37 +61,57 @@ class RegularTransferLC(RegularTransferLR):
 
 #%%
 """ VARIABLE DEFINITION """
+source_domain =  sys.argv[1]
+target_domain =  sys.argv[2]
+dataset = int(eval(sys.argv[7]))
+shuffle = False
+average=False
+binary=False
+if dataset==0:
+    dataset='own'
+    subjects = sorted([S.split('/')[-1] for S in glob.glob(os.path.join('../data','Sourceeption','*'))])
+    allregions=sorted([R.split('/')[-1].split('.')[0] for R in glob.glob(os.path.join(f'../data/Sourceeption/{subjects[0]}','*.npy'))])
+    idx = [int(r) for r in sys.argv[4].split('+')]
+    region = allregions if int(eval(sys.argv[4]))==-1 else [allregions[i] for i in idx]
+    
+    region_name='all_regions' if int(eval(sys.argv[4]))==-1 else '-'.join(region)
+else:
+    dataset ='ds001246'
+    subjects = sorted([S.split('/')[-1].split('.')[0] for S in glob.glob(os.path.join(f'../{dataset}','*'))])
+    region = sys.argv[5]
+    region_name = region
+subject = subjects[ int(eval(sys.argv[3]))]
 
-subjects = sorted([S.split('/')[-1] for S in glob.glob(os.path.join('../data','perception','*'))])
-allregions=sorted([R.split('/')[-1].split('.')[0] for R in glob.glob(os.path.join(f'../data/perception/{subjects[0]}','*.npy'))])
 methods = [PRED, FA, SA,
            KMM, ULSIF, RULSIF, NearestNeighborsWeighting, IWN, BalancedWeighting, TrAdaBoost, RegularTransferLC]
 method_names = [m.__name__ for m in methods]
 methods = {n:m for n,m in zip(method_names,methods)}
 parameters = {m : {} for m in method_names}
 
-source_domain =  sys.argv[1]
-target_domain =  sys.argv[2]
+
 subject = subjects[ int(eval(sys.argv[3]))]
 method = sys.argv[4]
-region = allregions if int(eval(sys.argv[5]))==-1 else allregions[int(eval(sys.argv[5]))]
 NITER = int(eval(sys.argv[6]))
+
+
 splitting='StratifiedGroupKFold'
 n_folds = 5
-region_name='all_regions' if int(eval(sys.argv[5]))==-1 else region
 
 
 fulldf=pd.DataFrame()
 
-outdir = os.path.join('../results/DA_comparison', region_name, f'{source_domain}_{target_domain}', subject)
+if dataset =='own':
+    outdir = os.path.join('../results/DA_comparison', region_name, f'{source_domain}_{target_domain}', subject)
+else:
+    outdir = os.path.join(f'../results/DA_comparison/{dataset}', region_name, f'{source_domain}_{target_domain}', subject)
 if not os.path.exists(outdir):
 	os.makedirs(outdir)
 """ MAIN PROGRAM """
 #%%
 
 t0=time()
-
-estimator = LogisticRegression()
+params_base = {} if dataset=='own' else {'multi_class':'ovr', 'n_jobs':-1}
+estimator = LogisticRegression(**params_base)
 
 results={}
 t0=time()
@@ -102,22 +122,25 @@ DA_method =  methods[method]
 params = parameters[method]
 
 
-print(f'Fitting {method} for subject {subject} in region {region_name}...')
-Nts=range(10,110, 10)
+print(f'Fitting {method} for subject {subject} in region {region_name} using dataset {dataset}...')
+Nts=range(10,110, 10) if dataset=='own' else [100]
 
 if not Path(os.path.join(outdir, f'DA_{method}.csv')).is_file():
     remove_noise=True
-    perc_X, perc_y, perc_g = MyFullDataset(source_domain, subject, region, remove_noise=remove_noise)[:]
-    imag_X, imag_y, imag_g = MyFullDataset(target_domain, subject, region, remove_noise=remove_noise)[:]
+    Source_X, Source_y, Source_g = MyFullDataset(source_domain, subject, region, remove_noise=remove_noise,dataset=dataset)[:]
+    Target_X, Target_y, Target_g = MyFullDataset(target_domain, subject, region, remove_noise=remove_noise,dataset=dataset)[:]
     
-    
+    if dataset== 'ds001246': NITER = len(np.unique(Source_g))
     
     balanced_accuracy, balanced_accuracy_im, balanced_accuracy_imtr=pd.DataFrame(),pd.DataFrame(),pd.DataFrame()
     for Nt in tqdm(Nts):
         balanced_accuracy_s,balanced_accuracy_im_s, balanced_accuracy_imtr_s=[],[],[]
-        s = DomainAdaptationSplitter(StratifiedGroupKFold, NITER)
-        Source, Target=s.split(perc_X, perc_y, perc_g,imag_X, imag_y, imag_g,Nt,Nt)# last arg is random seed
-        d = DomainAdaptationData(Source, Target)
+        if dataset=='own':
+            s = DomainAdaptationSplitter(StratifiedGroupKFold, NITER) 
+            Source, Target=s.split(Source_X, Source_y, Source_g,Target_X, Target_y, Target_g,Nt, Nt)# Last argument is the random seed.
+        else:
+            Source, Target = DomainAdaptationGOD(Source_X, Target_X, Source_y, Target_y, Source_g, Target_g).split()
+        d = DomainAdaptationData(Source, Target) #Just a wrapping class for convenience.
         for i in range(NITER):
             
             train = d.Source_train_X[i]
@@ -126,7 +149,7 @@ if not Path(os.path.join(outdir, f'DA_{method}.csv')).is_file():
     
             train_label = np.ravel(d.Source_train_y[i])  
             test_label = np.ravel(d.Source_test_y[i])
-            # We select a number "Nt" of instances from the target domain (usually imagery)
+            # We select a number "Nt" of instances from the target domain (usually Targetery)
             I_train, I_test, IL_train, IL_test = d.Target_train_X[i], d.Target_test_X[i], d.Target_train_y[i], d.Target_test_y[i]
             # I_train contains "Nt" instances. Those are passed to the ADAPT method
            
@@ -146,17 +169,17 @@ if not Path(os.path.join(outdir, f'DA_{method}.csv')).is_file():
             
             if method not in  ['TrAdaBoost', 'RegularTransferLC']:
                 aux_ys = clf.predict(test, domain='src')                 # Predictions in source domain 
-                aux_ys_imag = clf.predict(I_test, domain = 'tgt')        # Predictions in target domain
-                aux_ys_imag_tr = clf.predict(I_train, domain = 'tgt')
+                aux_ys_Target = clf.predict(I_test, domain = 'tgt')        # Predictions in target domain
+                aux_ys_Target_tr = clf.predict(I_train, domain = 'tgt')
             else:
                  aux_ys = clf.predict(test)                 # Predictions in source domain 
-                 aux_ys_imag = clf.predict(I_test)          # Predictions in target domain
-                 aux_ys_imag_tr = clf.predict(I_train)
+                 aux_ys_Target = clf.predict(I_test)          # Predictions in target domain
+                 aux_ys_Target_tr = clf.predict(I_train)
                 
             balanced_accuracy_s.append(balanced_accuracy_score( test_label, aux_ys))
             
-            balanced_accuracy_im_s.append(balanced_accuracy_score( IL_test, aux_ys_imag))
-            balanced_accuracy_imtr_s.append(balanced_accuracy_score( IL_train, aux_ys_imag_tr))
+            balanced_accuracy_im_s.append(balanced_accuracy_score( IL_test, aux_ys_Target))
+            balanced_accuracy_imtr_s.append(balanced_accuracy_score( IL_train, aux_ys_Target_tr))
             
         balanced_accuracy[Nt]=balanced_accuracy_s      
         balanced_accuracy_im[Nt]=balanced_accuracy_im_s
