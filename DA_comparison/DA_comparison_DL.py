@@ -110,15 +110,16 @@ NITER = int(eval(sys.argv[6]))
 splitting='StratifiedGroupKFold'
 n_folds = 5
 ICA=True
-
+#%%
 def launch_priscilla():
     i=0
     for s in range(5):
             for m, method in enumerate(method_names):
+                if method!='MCD': continue
                 print(f'sbatch --job-name={s}{method[:3]} ../../main/raw.sh DA_comparison_DL.py perception imagery {s} {method} FFA 100 1' )
                 i+=1
     print('Total number of jobs: ', i)
-
+#%%
 fulldf=pd.DataFrame()
 if dataset =='own':
     outdir = os.path.join('../results/DA_comparison', region_name, f'{source_domain}_{target_domain}', subject)
@@ -275,6 +276,9 @@ if not Path(os.path.join(outdir, f'DA_{method}.csv')).is_file():
                 # plt.show()
 
             elif method=='MCD':
+                encoder = Encoder_model(n_voxels,10)
+                task = Task_model(n_voxels)
+                discriminator = Discriminator_model(n_voxels)
                 clf = MCD(encoder, task,Xt=I_train, metrics=["accuracy"],
                                   optimizer=tf.keras.optimizers.legacy.Adam(0.001),
                                   optimizer_enc=tf.keras.optimizers.legacy.Adam(0.0001),
