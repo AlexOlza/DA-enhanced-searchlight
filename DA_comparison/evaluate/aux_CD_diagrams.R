@@ -144,53 +144,69 @@ plotRanking <-function (pvalues, summary, alpha = 0.05, cex = 0.75, decreasing =
     }
     return(list('groups' = to.join))
 }
-
-
-
-comparison.table<- function(pr){
-  nt <- names(pr$lines)
-  df <-  data.frame(matrix(NA, ncol=length(methods)+1, nrow=length(subjects)),row.names = subjects)[-1]
-  for (s in subjects){
-    df[s,] <- pr$ranking[[s]][1,]
-  }
-  names(df)<- methods
-
- 
-  for (s in subjects){
-    number_of_groups_s <- nrow(pr$lines[[s]])
-    for (i in 1:number_of_groups_s){
-        statistically_equal <- as.integer((df[s,]>=pr$lines[[s]][i,1]) & (df[s,]<=pr$lines[[s]][i,2]))
-        names(statistically_equal) <- methods
-        equal_methods <- names(statistically_equal[statistically_equal==1])
-        if (length(equal_methods)>1){
-          value <- rowMeans(df[s,equal_methods] ) 
-          for ( m2 in equal_methods){
-            df[s,m2] <- value
+compare_algorithms <- function(pr) {
+  # Get the names of the algorithms from the first ranking
+  algorithms <- base::colnames(pr$rankings[[1]])
+  
+  # Initialize the result matrix
+  result <- matrix(0, nrow = length(algorithms), ncol = length(algorithms))
+  base::rownames(result) <- algorithms
+  base::colnames(result) <- algorithms
+  
+  # Loop through each ranking and corresponding lines
+  for (k in seq_along(pr$rankings)) {
+    ranking_k <- pr$rankings[[k]] # matrix of rankings
+    lines_k <- pr$lines[[k]]      # matrix of intervals
+    
+    # Compare each pair of algorithms i and j
+    for (i in seq_along(algorithms)) {
+      for (j in seq_along(algorithms)) {
+        if (i != j) {
+          x <- ranking_k[1, i]  # Value for algorithm i
+          y <- ranking_k[1, j]  # Value for algorithm j
+          
+          # Check if x < y
+          if (x < y) {
+            # Check if both x and y are not in any of the intervals in lines_k
+            in_interval <- FALSE
+            for (interval in 1:nrow(lines_k)) {
+              lower <- min(lines_k[interval, 1], lines_k[interval, 2])
+              upper <- max(lines_k[interval, 1], lines_k[interval, 2])
+              if (x >= lower && x <= upper && y >= lower && y <= upper) {
+                in_interval <- TRUE
+                break
+              }
+            }
+            
+            # If not in an interval, count this as a valid comparison
+            if (!in_interval) {
+              result[i, j] <- result[i, j] + 1
+            }
           }
         }
-       
-    }
-  }
- df2 <-data.frame(matrix(NA, ncol=length(methods)+1, nrow=length(methods)),row.names = methods)[-1]
-  names(df2)<-methods
-
-  for ( m1 in methods){
-      for ( m2 in methods){
-        aux <- as.integer(df[[m1]]>df[[m2]])
-        df2[m1,m2] <- sum(aux)
       }
     }
-  tcol <- rowSums(df2)
-  trow <- colSums(df2)
-  df2[,'Total']<- tcol
-  df2['Total',methods]<- trow
-  return(df2)
+  }
+  
+  # Convert result matrix to dataframe for easier manipulation
+  df_result <- as.data.frame(result)
+  
+  # Add a column for the sum of each row
+  df_result$Total <- rowSums(df_result)
+  
+  # Add a row for the sum of each column (including the RowSum column)
+  col_sums <- colSums(df_result)
+  df_result <- rbind(df_result, Total = col_sums)
+  
+  return(df_result)
 }
+
+
 analysis_CONCAT <- function(results,region,title, savefigpath){
   print('COMPLETELY AGGREGATED ANALYSIS')
   
   df <- results
-  if (length(unique(df$Method))>1){ df$Method <- paste(df$Method,df$Region,sep='-')
+  if (length(unique(df$Method))>1){ df$Method <- paste(df$Method,df$Region,sep=' ')
   }
   else {
     df$Method <- df$Region

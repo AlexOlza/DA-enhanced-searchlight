@@ -34,6 +34,7 @@ methods<-unique(allresults$Method)
 # 2) CONCATENATE NT
 i<-1
 cols <- names(allresults[grepl("X[0-9]", names(allresults))])
+#cols=c('X100')
 results <- c()
 for (s in subjects){
   for (m in methods){
@@ -49,10 +50,9 @@ for (s in subjects){
   }
 }
 results <- as.data.frame(results)
-
 pr <-analysis_agg_Nt_CONCAT(results)
-comp <- comparison.table(pr)
-write.csv(comp,'../../figures/CD_diagrams/table_CD_diagrams.csv')
+comparison <- compare_algorithms(pr)
+write.csv(comparison,'../../figures/CD_diagrams/table_CD_diagrams.csv')
 i<-1
 results <- c()
 for (s in subjects){
@@ -70,6 +70,6 @@ for (s in subjects){
 }
 results <- as.data.frame(results)
 
-pr<- analysis_CONCAT(results, 'allregions','',savefigpath)
+pr2<- analysis_CONCAT(results, 'allregions','',savefigpath)
 
 
