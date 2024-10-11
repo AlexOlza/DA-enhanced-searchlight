@@ -5,7 +5,7 @@ Created on Fri Sep 15 16:37:53 2023
 
 @author: alexolza
 """
-from sklearn.model_selection import  train_test_split, LeavePGroupsOut
+from sklearn.model_selection import  train_test_split, LeavePGroupsOut, GroupShuffleSplit
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -20,9 +20,9 @@ class DomainAdaptationData:
         self.Source_test_g= Source['test_g']
         self.Source_train_i= Source['train_i']
         self.Source_test_i= Source['test_i']
-        self.Source_X= Source['X']
-        self.Source_y= Source['y']
-        self.Source_groups= Source['g']
+        # self.Source_X= Source['X']
+        # self.Source_y= Source['y']
+        # self.Source_groups= Source['g']
         
         self.Target_train_X= Target['train_X']
         self.Target_test_X= Target['test_X'] 
@@ -32,9 +32,9 @@ class DomainAdaptationData:
         self.Target_test_g= Target['test_g']
         self.Target_train_i= Target['train_i']
         self.Target_test_i= Target['test_i']
-        self.Target_X= Target['X']
-        self.Target_y= Target['y']
-        self.Target_groups= Target['g']
+        # self.Target_X= Target['X']
+        # self.Target_y= Target['y']
+        # self.Target_groups= Target['g']
 
 class DomainAdaptationGOD:
     def __init__(self,Source_X, Target_X, source_events, target_events, source_groups, target_groups, n_iter=100, target_n=100, random_state = 0,
@@ -182,9 +182,11 @@ def ds001246_cv_DA(source_events, target_events, source_groups, target_groups, n
                       stratify_tgt=True):
     Source_test_is, Target_test_is, Source_train_is, Target_train_is =[],[],[],[]
     splitter = LeavePGroupsOut(5)
+    # print((len(target_events)-target_n), target_n)
+    tgt_splitter = LeavePGroupsOut(2) #GroupShuffleSplit(n_splits=n_iter, train_size=(len(target_events)-target_n))
     src_splits=list(splitter.split(source_events,groups=source_groups))
-    tgt_splits = list(LeavePGroupsOut(3).split(target_events,groups=target_groups))
-    n_iter =min( len(src_splits),len(tgt_splits))
+    tgt_splits = list(tgt_splitter.split(target_events,groups=target_groups))
+    # n_iter =min( len(src_splits),len(tgt_splits))
     for i in range(n_iter):
         Source_train_index, Source_test_index = src_splits[i]
         Target_train_index, Target_test_index = tgt_splits[i]
