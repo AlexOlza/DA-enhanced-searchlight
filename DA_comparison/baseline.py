@@ -117,6 +117,8 @@ if not False:#Path(fname).is_file():
     # Even when concat_tgt==0, we use this for loop to ensure that the validation instances are exactly the same as for the rest of the methods
     # that do receive target somain instances for training. This guarantees that performance results can be analysed as paired observations.
     for Nt in tqdm(Nts):
+        prediction_fname =os.path.join(outdir, f'baseline_preds_{Nt}_{concat_tgt_marker}.csv')
+        prediction_matrix =-1 *np.ones((len(Target_y),NITER))
         balanced_accuracy_Nt,balanced_accuracy_im_Nt, balanced_accuracy_imtr_Nt=[],[],[]
         # This object will ensure independent train/test splits for our experimental design, avoiding data leackage.
         # Recall that, as explained in the paper, samples from the same trial and run are not independent.  
@@ -131,8 +133,7 @@ if not False:#Path(fname).is_file():
             train = d.Source_train_X[i]
             test = d.Source_test_X[i]
             I_train, I_test, IL_train, IL_test = d.Target_train_X[i], d.Target_test_X[i], d.Target_train_y[i], d.Target_test_y[i]
-            # print(train.shape[0], test.shape[0], I_train.shape[0], I_test.shape[0])
-            # break
+            I_test_idx =d.Target_test_i[i]
             if dataset== 'ds001246':
                 scaler_source=StandardScaler().fit(train)
                 train =scaler_source.transform(train)
@@ -166,6 +167,8 @@ if not False:#Path(fname).is_file():
             balanced_accuracy_im_Nt.append(balanced_accuracy_score( IL_test, aux_ys_imag))
             balanced_accuracy_imtr_Nt.append(balanced_accuracy_score( IL_train, aux_ys_imag_tr))
             
+            prediction_matrix[I_test_idx,i] = aux_ys_imag
+        np.save(prediction_fname,prediction_matrix)
         balanced_accuracy[Nt]=balanced_accuracy_Nt     
         balanced_accuracy_im[Nt]=balanced_accuracy_im_Nt
         balanced_accuracy_imtr[Nt]=balanced_accuracy_imtr_Nt
@@ -175,7 +178,7 @@ if not False:#Path(fname).is_file():
     balanced_accuracy_im['Domain']=target_domain
     balanced_accuracy_imtr['Domain']=target_domain+'_tr'
     results= pd.concat([balanced_accuracy,balanced_accuracy_im,balanced_accuracy_imtr])
-    # results.to_csv(fname)
+    results.to_csv(fname)
     print(f'Done {subject}: ',time()-t0)
 else:
      print('Nothing done: The result file already exists.')

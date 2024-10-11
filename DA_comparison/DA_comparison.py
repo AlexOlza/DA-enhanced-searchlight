@@ -150,6 +150,8 @@ if not Path(os.path.join(outdir, f'DA_{method}.csv')).is_file():
         else:
             Source, Target = DomainAdaptationGOD(Source_X, Target_X, Source_y, Target_y, Source_g, Target_g).split()
         d = DomainAdaptationData(Source, Target) #Just a wrapping class for convenience.
+        prediction_fname =os.path.join(outdir, f'{method}_preds_{Nt}.csv')
+        prediction_matrix =-1 *np.ones((len(Target_y),NITER))
         for i in range(NITER):
             
             train = d.Source_train_X[i]
@@ -161,7 +163,7 @@ if not Path(os.path.join(outdir, f'DA_{method}.csv')).is_file():
             # We select a number "Nt" of instances from the target domain (usually Targetery)
             I_train, I_test, IL_train, IL_test = d.Target_train_X[i], d.Target_test_X[i], d.Target_train_y[i], d.Target_test_y[i]
             # I_train contains "Nt" instances. Those are passed to the ADAPT method
-           
+            I_test_idx =d.Target_test_i[i]
             
             if method=='RegularTransferLC':
             	# Parameter-based methods from the ADAPT library require an estimator that has been previously fit to the source domain
@@ -189,7 +191,8 @@ if not Path(os.path.join(outdir, f'DA_{method}.csv')).is_file():
             
             balanced_accuracy_im_s.append(balanced_accuracy_score( IL_test, aux_ys_Target))
             balanced_accuracy_imtr_s.append(balanced_accuracy_score( IL_train, aux_ys_Target_tr))
-            
+            prediction_matrix[I_test_idx,i] = aux_ys_Target
+        np.save(prediction_fname,prediction_matrix)
         balanced_accuracy[Nt]=balanced_accuracy_s      
         balanced_accuracy_im[Nt]=balanced_accuracy_im_s
         balanced_accuracy_imtr[Nt]=balanced_accuracy_imtr_s
