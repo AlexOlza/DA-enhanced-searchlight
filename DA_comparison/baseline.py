@@ -106,7 +106,7 @@ if not False:#Path(fname).is_file():
     Source_X, Source_y, Source_g = MyFullDataset(source_domain, subject, region, remove_noise=remove_noise, dataset = dataset,average=average)[:] # Returns: voxels, labels, groups (run + trial)
     Target_X, Target_y, Target_g = MyFullDataset(target_domain, subject, region, remove_noise=remove_noise, dataset = dataset,average=average)[:]
     print('N voxels: ', Source_X.shape[-1])
-    if dataset== 'ds001246': NITER = len(np.unique(Source_g))
+    # if dataset== 'ds001246': NITER = len(np.unique(Source_g))
     
     
     estimator = LogisticRegression

@@ -139,8 +139,8 @@ if not Path(os.path.join(outdir, f'DA_{method}.csv')).is_file():
     Source_X, Source_y, Source_g = MyFullDataset(source_domain, subject, region, remove_noise=remove_noise,dataset=dataset)[:]
     Target_X, Target_y, Target_g = MyFullDataset(target_domain, subject, region, remove_noise=remove_noise,dataset=dataset)[:]
     
-    if dataset== 'ds001246': NITER = len(np.unique(Source_g))
-    
+    # if dataset== 'ds001246': NITER = len(np.unique(Source_g))
+    # 
     balanced_accuracy, balanced_accuracy_im, balanced_accuracy_imtr=pd.DataFrame(),pd.DataFrame(),pd.DataFrame()
     for Nt in tqdm(Nts):
         balanced_accuracy_s,balanced_accuracy_im_s, balanced_accuracy_imtr_s=[],[],[]
