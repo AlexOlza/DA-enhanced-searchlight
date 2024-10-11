@@ -115,8 +115,7 @@ def launch_priscilla():
     i=0
     for s in range(5):
             for m, method in enumerate(method_names):
-                if method!='MCD': continue
-                print(f'sbatch --job-name={s}{method[:3]} ../../main/raw.sh DA_comparison_DL.py perception imagery {s} {method} FFA 100 1' )
+                print(f'sbatch --job-name={s}{method[:3]} ../../main/raw.sh DA_comparison_DL.py perception imagery {s} {method} VC 100 1' )
                 i+=1
     print('Total number of jobs: ', i)
 #%%
@@ -140,7 +139,7 @@ params = parameters[method]
 
 
 print(f'Fitting {method} for subject {subject} in region {region_name}...')
-Nts=range(10,110, 10) if dataset=='own' else [100]
+Nts=range(10,110, 10) if dataset=='own' else [200, 250, 300, 350, 400]
 if not Path(os.path.join(outdir, f'DA_{method}.csv')).is_file():
     remove_noise=True
     Source_X, Source_y, Source_g = MyFullDataset(source_domain, subject, region, remove_noise=remove_noise,dataset=dataset)[:]

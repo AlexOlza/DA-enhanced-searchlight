@@ -90,14 +90,14 @@ fname = os.path.join(outdir, f'baseline{concat_tgt_marker}.csv')
 params = {} if dataset=='own' else {'class_weight':'balanced'}
 print(f'Fitting baseline {concat_tgt_marker} for subject {subject} in region {region_name} using dataset {dataset}...')
 # print(allregions)
-if not Path(fname).is_file():
+if not False:#Path(fname).is_file():
     
     t0=time()      
 
     results={}
     t0=time()
     
-    Nts=range(10,110, 10) if dataset=='own' else [100] # Number of training instances to be used during training when concat_tgt==1.
+    Nts=range(10,110, 10) if dataset=='own' else [200, 250, 300, 350, 400] # Number of training instances to be used during training when concat_tgt==1.
 
     # The dataset used for the paper contained additional samples collected while the subject was
     # presented with gaussian noise images. We have not used them in our experiments, hence the variable remove_noise.
@@ -124,14 +124,15 @@ if not Path(fname).is_file():
             s = DomainAdaptationSplitter(StratifiedGroupKFold, NITER) 
             Source, Target=s.split(Source_X, Source_y, Source_g,Target_X, Target_y, Target_g,Nt, Nt)# Last argument is the random seed.
         else:
-            Source, Target = DomainAdaptationGOD(Source_X, Target_X, Source_y, Target_y, Source_g, Target_g).split()
+            Source, Target = DomainAdaptationGOD(Source_X, Target_X, Source_y, Target_y, Source_g, Target_g,target_n=Nt).split()
         d = DomainAdaptationData(Source, Target) #Just a wrapping class for convenience.
         for i in tqdm(range(NITER)):
             clf = estimator(**params)
             train = d.Source_train_X[i]
             test = d.Source_test_X[i]
             I_train, I_test, IL_train, IL_test = d.Target_train_X[i], d.Target_test_X[i], d.Target_train_y[i], d.Target_test_y[i]
-            
+            # print(train.shape[0], test.shape[0], I_train.shape[0], I_test.shape[0])
+            # break
             if dataset== 'ds001246':
                 scaler_source=StandardScaler().fit(train)
                 train =scaler_source.transform(train)
@@ -174,7 +175,7 @@ if not Path(fname).is_file():
     balanced_accuracy_im['Domain']=target_domain
     balanced_accuracy_imtr['Domain']=target_domain+'_tr'
     results= pd.concat([balanced_accuracy,balanced_accuracy_im,balanced_accuracy_imtr])
-    results.to_csv(fname)
+    # results.to_csv(fname)
     print(f'Done {subject}: ',time()-t0)
 else:
      print('Nothing done: The result file already exists.')

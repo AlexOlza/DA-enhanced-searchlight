@@ -58,7 +58,16 @@ class RegularTransferLC(RegularTransferLR):
 		# print(yt.shape) -> this print is present in the current release of ADAPT, and it is very annoying
 		
 		return super().fit(Xt, yt, **fit_params)
-
+#%%
+def launch_priscilla():
+    for m in method_names:
+        for s in range(5):
+            print(f'sbatch --job-name={s}{m} ../../main/raw.sh DA_comparison.py perception imagery {s} {m} VC 100 1')
+#%%
+def launch_priscilla_baseline():
+        for s in range(5):
+            print(f'sbatch --job-name={s}base ../../main/raw.sh baseline.py perception imagery {s} VC 100 0 1')
+            print(f'sbatch --job-name={s}naive ../../main/raw.sh baseline.py perception imagery {s} VC 100 1 1')
 #%%
 """ VARIABLE DEFINITION """
 source_domain =  sys.argv[1]
@@ -69,8 +78,8 @@ average=False
 binary=False
 if dataset==0:
     dataset='own'
-    subjects = sorted([S.split('/')[-1] for S in glob.glob(os.path.join('../data','Sourceeption','*'))])
-    allregions=sorted([R.split('/')[-1].split('.')[0] for R in glob.glob(os.path.join(f'../data/Sourceeption/{subjects[0]}','*.npy'))])
+    subjects = sorted([S.split('/')[-1] for S in glob.glob(os.path.join('../data','perception','*'))])
+    allregions=sorted([R.split('/')[-1].split('.')[0] for R in glob.glob(os.path.join(f'../data/perception/{subjects[0]}','*.npy'))])
     idx = [int(r) for r in sys.argv[4].split('+')]
     region = allregions if int(eval(sys.argv[4]))==-1 else [allregions[i] for i in idx]
     
@@ -123,7 +132,7 @@ params = parameters[method]
 
 
 print(f'Fitting {method} for subject {subject} in region {region_name} using dataset {dataset}...')
-Nts=range(10,110, 10) if dataset=='own' else [100]
+Nts=range(10,110, 10) if dataset=='own' else [200, 250, 300, 350, 400]
 
 if not Path(os.path.join(outdir, f'DA_{method}.csv')).is_file():
     remove_noise=True
