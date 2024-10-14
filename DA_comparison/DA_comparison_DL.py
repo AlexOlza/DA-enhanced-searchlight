@@ -148,9 +148,10 @@ if not Path(os.path.join(outdir, f'DA_{method}.csv')).is_file():
     # if dataset== 'ds001246': NITER = len(np.unique(Source_g))
     
     balanced_accuracy, balanced_accuracy_im, balanced_accuracy_imtr=pd.DataFrame(),pd.DataFrame(),pd.DataFrame()
-    balanced_accuracy_s,balanced_accuracy_im_s, balanced_accuracy_imtr_s=[],[],[]
+    
     for Nt in tqdm(Nts):
         random_state=Nt
+        balanced_accuracy_s,balanced_accuracy_im_s, balanced_accuracy_imtr_s=[],[],[]
         if dataset=='own':
             s = DomainAdaptationSplitter(StratifiedGroupKFold, NITER) 
             Source, Target=s.split(Source_X, Source_y, Source_g,Target_X, Target_y, Target_g,Nt, Nt)# Last argument is the random seed.
