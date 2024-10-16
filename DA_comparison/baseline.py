@@ -68,6 +68,7 @@ else:
     subjects = sorted([S.split('/')[-1].split('.')[0] for S in glob.glob(os.path.join(f'../{dataset}','*'))])
     region = sys.argv[4]
     region_name = region
+    
 subject = subjects[ int(eval(sys.argv[3]))]
 
 
@@ -80,7 +81,7 @@ n_folds = 5
 if dataset =='own':
     outdir = os.path.join('../results/DA_comparison', region_name, f'{source_domain}_{target_domain}', subject)
 else:
-    outdir = os.path.join(f'../results/DA_comparison/{dataset}', region_name, f'{source_domain}_{target_domain}', subject)
+    outdir = os.path.join(f'../results/DA_comparison/{dataset}_grouped', region_name, f'{source_domain}_{target_domain}', subject)
 if not os.path.exists(outdir):
     os.makedirs(outdir)
 
@@ -106,8 +107,6 @@ if not False:#Path(fname).is_file():
     Source_X, Source_y, Source_g = MyFullDataset(source_domain, subject, region, remove_noise=remove_noise, dataset = dataset,average=average)[:] # Returns: voxels, labels, groups (run + trial)
     Target_X, Target_y, Target_g = MyFullDataset(target_domain, subject, region, remove_noise=remove_noise, dataset = dataset,average=average)[:]
     print('N voxels: ', Source_X.shape[-1])
-    # if dataset== 'ds001246': NITER = len(np.unique(Source_g))
-    
     
     estimator = LogisticRegression
 

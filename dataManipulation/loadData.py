@@ -96,11 +96,13 @@ class MyFullDataset(): # Loads the whole dataset for a domain, subject and regio
             
 
             self.datax = region_voxels[idx,:]
-            self.labels = categories[idx].ravel()
+            self.labels, self.fine_grained_labels, self.categories, self.fine_grained_categories = self.__group_categories__(categories[idx].ravel())
             self.trials = runs[idx].ravel()
             
-            
-            
+    def __group_categories__(self,categories):    
+        category_meanings = pd.read_csv(f'{DATAPATH_ds001246}/category_meaning.csv')
+        merged = pd.merge(category_meanings,pd.DataFrame(categories,columns=['category_id']),on='category_id')
+        return(merged.semantic_group_id.values,merged.category_id.values,merged.semantic_group.values, merged.category.values)
     def __getitem__(self, index):
 
         y = self.labels[index]
