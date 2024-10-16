@@ -38,6 +38,9 @@ from sklearn.preprocessing import StandardScaler
 from matplotlib import pyplot as plt
 import seaborn as sns
 from sklearn.metrics import classification_report,ConfusionMatrixDisplay 
+
+from imblearn.over_sampling import RandomOverSampler
+from collections import Counter
 if not sys.warnoptions:
     warnings.simplefilter("ignore")
     
@@ -81,7 +84,7 @@ n_folds = 5
 if dataset =='own':
     outdir = os.path.join('../results/DA_comparison', region_name, f'{source_domain}_{target_domain}', subject)
 else:
-    outdir = os.path.join(f'../results/DA_comparison/{dataset}_grouped', region_name, f'{source_domain}_{target_domain}', subject)
+    outdir = os.path.join(f'../results/DA_comparison/{dataset}_oversampled', region_name, f'{source_domain}_{target_domain}', subject)
 if not os.path.exists(outdir):
     os.makedirs(outdir)
 
@@ -143,9 +146,19 @@ if not False:#Path(fname).is_file():
                 
             train_label = np.ravel(d.Source_train_y[i])  
             test_label = np.ravel(d.Source_test_y[i])
-            # print(d.Source_train_i[i][:10])
-            if shuffle: np.random.shuffle(train_label); print('SHUFFLING LABELS!!!!!!!')
+            
+            print('Original dataset shape %s' % Counter(train_label))
+            ros = RandomOverSampler(random_state=i)
 
+            train, train_label = ros.fit_resample(train, train_label)
+            print('Resampled dataset shape %s' % Counter(train_label))
+            # We select a number "Nt" of instances from the target domain (usually Targetery)
+            I_train, I_test, IL_train, IL_test = d.Target_train_X[i], d.Target_test_X[i], d.Target_train_y[i], d.Target_test_y[i]
+            # I_train contains "Nt" instances. Those are passed to the ADAPT method
+            I_test_idx =d.Target_test_i[i]
+            print('Original target dataset shape %s' % Counter(IL_train))
+            I_train, IL_train = ros.fit_resample(I_train, IL_train)
+            print('Resampled target dataset shape %s' % Counter(IL_train))
             # We select a number "Nt" of instances from the target domain (usually imagery)
             # I_train contains "Nt" instances. Those are used for training only if concat_tgt==1.
             # I_test contains those remaining target domain instances that are independent from I_train.

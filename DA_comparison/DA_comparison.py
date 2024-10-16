@@ -35,7 +35,8 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import StratifiedGroupKFold
 from tqdm import tqdm
 import warnings
-
+from imblearn.over_sampling import RandomOverSampler
+from collections import Counter
 if not sys.warnoptions:
     warnings.simplefilter("ignore")
     os.environ["PYTHONWARNINGS"] = "ignore" # Also affect subprocesses
@@ -112,7 +113,7 @@ fulldf=pd.DataFrame()
 if dataset =='own':
     outdir = os.path.join('../results/DA_comparison', region_name, f'{source_domain}_{target_domain}', subject)
 else:
-    outdir = os.path.join(f'../results/DA_comparison/{dataset}_grouped', region_name, f'{source_domain}_{target_domain}', subject)
+    outdir = os.path.join(f'../results/DA_comparison/{dataset}_oversampled', region_name, f'{source_domain}_{target_domain}', subject)
 if not os.path.exists(outdir):
 	os.makedirs(outdir)
 """ MAIN PROGRAM """
@@ -160,11 +161,19 @@ if not Path(os.path.join(outdir, f'DA_{method}.csv')).is_file():
     
             train_label = np.ravel(d.Source_train_y[i])  
             test_label = np.ravel(d.Source_test_y[i])
+            
+            print('Original dataset shape %s' % Counter(train_label))
+            ros = RandomOverSampler(random_state=i)
+
+            train, train_label = ros.fit_resample(train, train_label)
+            print('Resampled dataset shape %s' % Counter(train_label))
             # We select a number "Nt" of instances from the target domain (usually Targetery)
             I_train, I_test, IL_train, IL_test = d.Target_train_X[i], d.Target_test_X[i], d.Target_train_y[i], d.Target_test_y[i]
             # I_train contains "Nt" instances. Those are passed to the ADAPT method
             I_test_idx =d.Target_test_i[i]
-            
+            print('Original target dataset shape %s' % Counter(IL_train))
+            I_train, IL_train = ros.fit_resample(I_train, IL_train)
+            print('Resampled target dataset shape %s' % Counter(IL_train))
             if method=='RegularTransferLC':
             	# Parameter-based methods from the ADAPT library require an estimator that has been previously fit to the source domain
                 estimator.fit(train,train_label)
