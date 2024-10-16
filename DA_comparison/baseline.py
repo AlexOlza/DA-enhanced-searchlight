@@ -74,8 +74,7 @@ else:
     
 subject = subjects[ int(eval(sys.argv[3]))]
 
-
-NITER = int(eval(sys.argv[5]))
+NITER_ = int(eval(sys.argv[5]))
 concat_tgt=int(eval(sys.argv[6]))
 concat_tgt_marker='' if concat_tgt==0 else '_withtgt'
 splitting='StratifiedGroupKFold'
@@ -84,7 +83,7 @@ n_folds = 5
 if dataset =='own':
     outdir = os.path.join('../results/DA_comparison', region_name, f'{source_domain}_{target_domain}', subject)
 else:
-    outdir = os.path.join(f'../results/DA_comparison/{dataset}_oversampled', region_name, f'{source_domain}_{target_domain}', subject)
+    outdir = os.path.join(f'../results/DA_comparison/{dataset}_oversampled2', region_name, f'{source_domain}_{target_domain}', subject)
 if not os.path.exists(outdir):
     os.makedirs(outdir)
 
@@ -101,7 +100,7 @@ if not False:#Path(fname).is_file():
     results={}
     t0=time()
     
-    Nts=range(10,110, 10) if dataset=='own' else [200, 250, 300, 350, 400] # Number of training instances to be used during training when concat_tgt==1.
+    Nts=range(10,110, 10) if dataset=='own' else [200, 250, 300] # Number of training instances to be used during training when concat_tgt==1.
 
     # The dataset used for the paper contained additional samples collected while the subject was
     # presented with gaussian noise images. We have not used them in our experiments, hence the variable remove_noise.
@@ -109,6 +108,10 @@ if not False:#Path(fname).is_file():
     # We read the complete datasets.
     Source_X, Source_y, Source_g = MyFullDataset(source_domain, subject, region, remove_noise=remove_noise, dataset = dataset,average=average)[:] # Returns: voxels, labels, groups (run + trial)
     Target_X, Target_y, Target_g = MyFullDataset(target_domain, subject, region, remove_noise=remove_noise, dataset = dataset,average=average)[:]
+    
+    Source_X, Source_y, Source_g = Source_X[Source_y!=9], Source_y[Source_y!=9], Source_g[Source_y!=9]
+    Target_X, Target_y, Target_g = Target_X[Target_y!=9], Target_y[Target_y!=9], Target_g[Target_y!=9]
+    
     print('N voxels: ', Source_X.shape[-1])
     
     estimator = LogisticRegression
@@ -119,17 +122,19 @@ if not False:#Path(fname).is_file():
     # Even when concat_tgt==0, we use this for loop to ensure that the validation instances are exactly the same as for the rest of the methods
     # that do receive target somain instances for training. This guarantees that performance results can be analysed as paired observations.
     for Nt in tqdm(Nts):
-        prediction_fname =os.path.join(outdir, f'baseline_preds_{Nt}_{concat_tgt_marker}.csv')
-        prediction_matrix =-1 *np.ones((len(Target_y),NITER))
-        balanced_accuracy_Nt,balanced_accuracy_im_Nt, balanced_accuracy_imtr_Nt=[],[],[]
+        
+        balanced_accuracy_Nt,balanced_accuracy_im_Nt, balanced_accuracy_imtr_Nt=-np.ones(NITER_),-np.ones(NITER_),-np.ones(NITER_)
         # This object will ensure independent train/test splits for our experimental design, avoiding data leackage.
         # Recall that, as explained in the paper, samples from the same trial and run are not independent.  
         if dataset=='own':
-            s = DomainAdaptationSplitter(StratifiedGroupKFold, NITER) 
+            s = DomainAdaptationSplitter(StratifiedGroupKFold, NITER_) 
             Source, Target=s.split(Source_X, Source_y, Source_g,Target_X, Target_y, Target_g,Nt, Nt)# Last argument is the random seed.
         else:
             Source, Target = DomainAdaptationGOD(Source_X, Target_X, Source_y, Target_y, Source_g, Target_g,target_n=Nt).split()
         d = DomainAdaptationData(Source, Target) #Just a wrapping class for convenience.
+        NITER =len(d.Target_train_y)
+        prediction_fname =os.path.join(outdir, f'baseline_preds_{Nt}_{concat_tgt_marker}.csv')
+        prediction_matrix =-1 *np.ones((len(Target_y),NITER))
         for i in tqdm(range(NITER)):
             clf = estimator(**params)
             train = d.Source_train_X[i]
@@ -147,18 +152,18 @@ if not False:#Path(fname).is_file():
             train_label = np.ravel(d.Source_train_y[i])  
             test_label = np.ravel(d.Source_test_y[i])
             
-            print('Original dataset shape %s' % Counter(train_label))
+            # print('Original dataset shape %s' % Counter(train_label))
             ros = RandomOverSampler(random_state=i)
 
             train, train_label = ros.fit_resample(train, train_label)
-            print('Resampled dataset shape %s' % Counter(train_label))
+            # print('Resampled dataset shape %s' % Counter(train_label))
             # We select a number "Nt" of instances from the target domain (usually Targetery)
             I_train, I_test, IL_train, IL_test = d.Target_train_X[i], d.Target_test_X[i], d.Target_train_y[i], d.Target_test_y[i]
             # I_train contains "Nt" instances. Those are passed to the ADAPT method
             I_test_idx =d.Target_test_i[i]
-            print('Original target dataset shape %s' % Counter(IL_train))
+            # print('Original target dataset shape %s' % Counter(IL_train))
             I_train, IL_train = ros.fit_resample(I_train, IL_train)
-            print('Resampled target dataset shape %s' % Counter(IL_train))
+            # print('Resampled target dataset shape %s' % Counter(IL_train))
             # We select a number "Nt" of instances from the target domain (usually imagery)
             # I_train contains "Nt" instances. Those are used for training only if concat_tgt==1.
             # I_test contains those remaining target domain instances that are independent from I_train.
@@ -174,10 +179,10 @@ if not False:#Path(fname).is_file():
             
 
             
-            balanced_accuracy_Nt.append(balanced_accuracy_score( test_label, aux_ys))
+            balanced_accuracy_Nt[i]=balanced_accuracy_score( test_label, aux_ys)
             
-            balanced_accuracy_im_Nt.append(balanced_accuracy_score( IL_test, aux_ys_imag))
-            balanced_accuracy_imtr_Nt.append(balanced_accuracy_score( IL_train, aux_ys_imag_tr))
+            balanced_accuracy_im_Nt[i]=balanced_accuracy_score( IL_test, aux_ys_imag)
+            balanced_accuracy_imtr_Nt[i]=balanced_accuracy_score( IL_train, aux_ys_imag_tr)
             
             prediction_matrix[I_test_idx,i] = aux_ys_imag
         np.save(prediction_fname,prediction_matrix)

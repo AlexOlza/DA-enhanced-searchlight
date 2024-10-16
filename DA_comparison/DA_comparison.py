@@ -101,7 +101,7 @@ parameters = {m : {} for m in method_names}
 
 subject = subjects[ int(eval(sys.argv[3]))]
 method = sys.argv[4]
-NITER = int(eval(sys.argv[6]))
+NITER_ = int(eval(sys.argv[6]))
 
 
 splitting='StratifiedGroupKFold'
@@ -113,7 +113,7 @@ fulldf=pd.DataFrame()
 if dataset =='own':
     outdir = os.path.join('../results/DA_comparison', region_name, f'{source_domain}_{target_domain}', subject)
 else:
-    outdir = os.path.join(f'../results/DA_comparison/{dataset}_oversampled', region_name, f'{source_domain}_{target_domain}', subject)
+    outdir = os.path.join(f'../results/DA_comparison/{dataset}_oversampled2', region_name, f'{source_domain}_{target_domain}', subject)
 if not os.path.exists(outdir):
 	os.makedirs(outdir)
 """ MAIN PROGRAM """
@@ -133,7 +133,7 @@ params = parameters[method]
 
 
 print(f'Fitting {method} for subject {subject} in region {region_name} using dataset {dataset}...')
-Nts=range(10,110, 10) if dataset=='own' else [200, 250, 300, 350, 400]
+Nts=range(10,110, 10) if dataset=='own' else [200, 250, 300]
 
 if not Path(os.path.join(outdir, f'DA_{method}.csv')).is_file():
     remove_noise=True
@@ -144,15 +144,17 @@ if not Path(os.path.join(outdir, f'DA_{method}.csv')).is_file():
     # 
     balanced_accuracy, balanced_accuracy_im, balanced_accuracy_imtr=pd.DataFrame(),pd.DataFrame(),pd.DataFrame()
     for Nt in tqdm(Nts):
-        balanced_accuracy_s,balanced_accuracy_im_s, balanced_accuracy_imtr_s=[],[],[]
+        balanced_accuracy_s,balanced_accuracy_im_s, balanced_accuracy_imtr_s=-np.ones(NITER_),-np.ones(NITER_),-np.ones(NITER_)
         if dataset=='own':
-            s = DomainAdaptationSplitter(StratifiedGroupKFold, NITER) 
+            s = DomainAdaptationSplitter(StratifiedGroupKFold, NITER_) 
             Source, Target=s.split(Source_X, Source_y, Source_g,Target_X, Target_y, Target_g,Nt, Nt)# Last argument is the random seed.
         else:
             Source, Target = DomainAdaptationGOD(Source_X, Target_X, Source_y, Target_y, Source_g, Target_g).split()
         d = DomainAdaptationData(Source, Target) #Just a wrapping class for convenience.
         prediction_fname =os.path.join(outdir, f'{method}_preds_{Nt}.csv')
+        NITER =len(d.Target_train_y)
         prediction_matrix =-1 *np.ones((len(Target_y),NITER))
+        
         for i in range(NITER):
             
             train = d.Source_train_X[i]
@@ -162,18 +164,18 @@ if not Path(os.path.join(outdir, f'DA_{method}.csv')).is_file():
             train_label = np.ravel(d.Source_train_y[i])  
             test_label = np.ravel(d.Source_test_y[i])
             
-            print('Original dataset shape %s' % Counter(train_label))
+            # print('Original dataset shape %s' % Counter(train_label))
             ros = RandomOverSampler(random_state=i)
 
             train, train_label = ros.fit_resample(train, train_label)
-            print('Resampled dataset shape %s' % Counter(train_label))
+            # print('Resampled dataset shape %s' % Counter(train_label))
             # We select a number "Nt" of instances from the target domain (usually Targetery)
             I_train, I_test, IL_train, IL_test = d.Target_train_X[i], d.Target_test_X[i], d.Target_train_y[i], d.Target_test_y[i]
             # I_train contains "Nt" instances. Those are passed to the ADAPT method
             I_test_idx =d.Target_test_i[i]
-            print('Original target dataset shape %s' % Counter(IL_train))
+            # print('Original target dataset shape %s' % Counter(IL_train))
             I_train, IL_train = ros.fit_resample(I_train, IL_train)
-            print('Resampled target dataset shape %s' % Counter(IL_train))
+            # print('Resampled target dataset shape %s' % Counter(IL_train))
             if method=='RegularTransferLC':
             	# Parameter-based methods from the ADAPT library require an estimator that has been previously fit to the source domain
                 estimator.fit(train,train_label)
@@ -196,10 +198,10 @@ if not Path(os.path.join(outdir, f'DA_{method}.csv')).is_file():
                  aux_ys_Target = clf.predict(I_test)          # Predictions in target domain
                  aux_ys_Target_tr = clf.predict(I_train)
                 
-            balanced_accuracy_s.append(balanced_accuracy_score( test_label, aux_ys))
+            balanced_accuracy_s[i]=balanced_accuracy_score( test_label, aux_ys)
             
-            balanced_accuracy_im_s.append(balanced_accuracy_score( IL_test, aux_ys_Target))
-            balanced_accuracy_imtr_s.append(balanced_accuracy_score( IL_train, aux_ys_Target_tr))
+            balanced_accuracy_im_s[i]=balanced_accuracy_score( IL_test, aux_ys_Target)
+            balanced_accuracy_imtr_s[i]=balanced_accuracy_score( IL_train, aux_ys_Target_tr)
             prediction_matrix[I_test_idx,i] = aux_ys_Target
         np.save(prediction_fname,prediction_matrix)
         balanced_accuracy[Nt]=balanced_accuracy_s      
