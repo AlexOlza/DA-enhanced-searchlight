@@ -83,7 +83,7 @@ n_folds = 5
 if dataset =='own':
     outdir = os.path.join('../results/DA_comparison', region_name, f'{source_domain}_{target_domain}', subject)
 else:
-    outdir = os.path.join(f'../results/DA_comparison/{dataset}_oversampled2', region_name, f'{source_domain}_{target_domain}', subject)
+    outdir = os.path.join(f'../results/DA_comparison/{dataset}_oversampled2_no9', region_name, f'{source_domain}_{target_domain}', subject)
 if not os.path.exists(outdir):
     os.makedirs(outdir)
 
@@ -133,6 +133,7 @@ if not False:#Path(fname).is_file():
             Source, Target = DomainAdaptationGOD(Source_X, Target_X, Source_y, Target_y, Source_g, Target_g,target_n=Nt).split()
         d = DomainAdaptationData(Source, Target) #Just a wrapping class for convenience.
         NITER =len(d.Target_train_y)
+        
         prediction_fname =os.path.join(outdir, f'baseline_preds_{Nt}_{concat_tgt_marker}.csv')
         prediction_matrix =-1 *np.ones((len(Target_y),NITER))
         for i in tqdm(range(NITER)):

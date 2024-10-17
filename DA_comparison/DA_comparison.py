@@ -113,7 +113,7 @@ fulldf=pd.DataFrame()
 if dataset =='own':
     outdir = os.path.join('../results/DA_comparison', region_name, f'{source_domain}_{target_domain}', subject)
 else:
-    outdir = os.path.join(f'../results/DA_comparison/{dataset}_oversampled2', region_name, f'{source_domain}_{target_domain}', subject)
+    outdir = os.path.join(f'../results/DA_comparison/{dataset}_oversampled2_no9', region_name, f'{source_domain}_{target_domain}', subject)
 if not os.path.exists(outdir):
 	os.makedirs(outdir)
 """ MAIN PROGRAM """
@@ -140,8 +140,9 @@ if not Path(os.path.join(outdir, f'DA_{method}.csv')).is_file():
     Source_X, Source_y, Source_g = MyFullDataset(source_domain, subject, region, remove_noise=remove_noise,dataset=dataset)[:]
     Target_X, Target_y, Target_g = MyFullDataset(target_domain, subject, region, remove_noise=remove_noise,dataset=dataset)[:]
     
-    # if dataset== 'ds001246': NITER = len(np.unique(Source_g))
-    # 
+    Source_X, Source_y, Source_g = Source_X[Source_y!=9], Source_y[Source_y!=9], Source_g[Source_y!=9]
+    Target_X, Target_y, Target_g = Target_X[Target_y!=9], Target_y[Target_y!=9], Target_g[Target_y!=9]
+    
     balanced_accuracy, balanced_accuracy_im, balanced_accuracy_imtr=pd.DataFrame(),pd.DataFrame(),pd.DataFrame()
     for Nt in tqdm(Nts):
         balanced_accuracy_s,balanced_accuracy_im_s, balanced_accuracy_imtr_s=-np.ones(NITER_),-np.ones(NITER_),-np.ones(NITER_)
@@ -154,7 +155,7 @@ if not Path(os.path.join(outdir, f'DA_{method}.csv')).is_file():
         prediction_fname =os.path.join(outdir, f'{method}_preds_{Nt}.csv')
         NITER =len(d.Target_train_y)
         prediction_matrix =-1 *np.ones((len(Target_y),NITER))
-        
+     
         for i in range(NITER):
             
             train = d.Source_train_X[i]
