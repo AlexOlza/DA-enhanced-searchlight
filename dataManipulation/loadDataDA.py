@@ -5,7 +5,7 @@ Created on Fri Sep 15 16:37:53 2023
 
 @author: alexolza
 """
-from sklearn.model_selection import  train_test_split, LeavePGroupsOut, GroupShuffleSplit
+from sklearn.model_selection import  train_test_split, LeavePGroupsOut, GroupShuffleSplit, StratifiedGroupKFold
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -36,49 +36,49 @@ class DomainAdaptationData:
         # self.Target_y= Target['y']
         # self.Target_groups= Target['g']
 
-class DomainAdaptationGOD:
-    def __init__(self,Source_X, Target_X, source_events, target_events, source_groups, target_groups, n_iter=100, target_n=100, random_state = 0,
-                          stratify_tgt=True):
+# class DomainAdaptationGOD:
+#     def __init__(self,Source_X, Target_X, source_events, target_events, source_groups, target_groups, n_iter=100, target_n=100, random_state = 0,
+#                           stratify_tgt=True):
         
-        Source_train_is,Target_train_is,Source_test_is,Target_test_is = ds001246_cv_DA(source_events, target_events, source_groups, target_groups, n_iter, target_n, random_state,
-                              stratify_tgt)
-        self.Source_X=Source_X
-        self.Target_X=Target_X
-        self.Source_y=source_events
-        self.Target_y=target_events
-        self.Source_g=source_groups
-        self.Target_g=target_groups
-        self.Source_train_is=Source_train_is
-        self.Target_train_is=Target_train_is
-        self. Source_test_is=Source_test_is
-        self.Target_test_is=Target_test_is
-    def split(self):
+#         Source_train_is,Target_train_is,Source_test_is,Target_test_is = ds001246_cv_DA(source_events, target_events, source_groups, target_groups, n_iter, target_n, random_state,
+#                               stratify_tgt)
+#         self.Source_X=Source_X
+#         self.Target_X=Target_X
+#         self.Source_y=source_events
+#         self.Target_y=target_events
+#         self.Source_g=source_groups
+#         self.Target_g=target_groups
+#         self.Source_train_is=Source_train_is
+#         self.Target_train_is=Target_train_is
+#         self. Source_test_is=Source_test_is
+#         self.Target_test_is=Target_test_is
+#     def split(self):
         
         
-        Source = {'train_X': self.Source_X[ self.Source_train_is],
-                  'test_X': self.Source_X[ self.Source_test_is],
-                  'train_y': self.Source_y[ self.Source_train_is],
-                  'test_y': self.Source_y[ self.Source_test_is],
-                  'train_g': self.Source_g[ self.Source_train_is],
-                  'test_g': self.Source_g[ self.Source_test_is],
-                  'train_i': self.Source_train_is,
-                  'test_i': self.Source_test_is,
-                  'X': self.Source_X,
-                  'y': self.Source_y,
-                  'g': self.Source_g}
+#         Source = {'train_X': self.Source_X[ self.Source_train_is],
+#                   'test_X': self.Source_X[ self.Source_test_is],
+#                   'train_y': self.Source_y[ self.Source_train_is],
+#                   'test_y': self.Source_y[ self.Source_test_is],
+#                   'train_g': self.Source_g[ self.Source_train_is],
+#                   'test_g': self.Source_g[ self.Source_test_is],
+#                   'train_i': self.Source_train_is,
+#                   'test_i': self.Source_test_is,
+#                   'X': self.Source_X,
+#                   'y': self.Source_y,
+#                   'g': self.Source_g}
         
-        Target = {'train_X': self.Target_X[ self.Target_train_is],
-                  'test_X': self.Target_X[ self.Target_test_is],
-                  'train_y': self.Target_y[ self.Target_train_is],
-                  'test_y': self.Target_y[ self.Target_test_is],
-                  'train_g': self.Target_g[ self.Target_train_is],
-                  'test_g': self.Target_g[ self.Target_test_is],
-                  'train_i': self.Target_train_is,
-                  'test_i': self.Target_test_is,
-                  'X': self.Target_X,
-                  'y': self.Target_y,
-                  'g': self.Target_g}
-        return(Source, Target)
+#         Target = {'train_X': self.Target_X[ self.Target_train_is],
+#                   'test_X': self.Target_X[ self.Target_test_is],
+#                   'train_y': self.Target_y[ self.Target_train_is],
+#                   'test_y': self.Target_y[ self.Target_test_is],
+#                   'train_g': self.Target_g[ self.Target_train_is],
+#                   'test_g': self.Target_g[ self.Target_test_is],
+#                   'train_i': self.Target_train_is,
+#                   'test_i': self.Target_test_is,
+#                   'X': self.Target_X,
+#                   'y': self.Target_y,
+#                   'g': self.Target_g}
+#         return(Source, Target)
 
 class DomainAdaptationSplitter:
     def __init__(self, cv, n_iter):
@@ -178,18 +178,55 @@ class DomainAdaptationSplitter:
     def get_n_splits(self, X, y, groups=None):
         return self.n_iter
 
+# def ds001246_cv_DA(source_events, target_events, source_groups, target_groups, n_iter=100, target_n=100, random_state = 0,
+#                       stratify_tgt=True):
+#     Source_test_is, Target_test_is, Source_train_is, Target_train_is =[],[],[],[]
+#     splitter = LeavePGroupsOut(5)
+#     # print((len(target_events)-target_n), target_n)
+#     tgt_splitter = LeavePGroupsOut(2) #GroupShuffleSplit(n_splits=n_iter, train_size=(len(target_events)-target_n))
+#     src_splits=list(splitter.split(source_events,groups=source_groups))
+#     tgt_splits = list(tgt_splitter.split(target_events,groups=target_groups))
+#     n_iter =min( len(src_splits),len(tgt_splits))
+#     for i in range(n_iter):
+#         Source_train_index, Source_test_index = src_splits[i]
+#         Target_train_index, Target_test_index = tgt_splits[i]
+        
+#         stratify = target_events[Target_train_index] if stratify_tgt else None
+        
+#         Final_Target_train_index, _ = train_test_split(Target_train_index, train_size=target_n, random_state=i,stratify=stratify)
+
+#         groups_to_discard = target_groups[Final_Target_train_index]
+
+#         indexes_to_append_to_test = [i for i in list(set(Final_Target_train_index)-set(Target_train_index)) if target_groups[i] not in groups_to_discard]
+#         Final_Target_test_index = list(Target_test_index) + list(indexes_to_append_to_test)
+
+#         Target_train_g, Target_test_g = target_groups[Final_Target_train_index], target_groups[Final_Target_test_index]
+#         Source_train_g, Source_test_g = source_groups[Source_train_index], source_groups[Source_test_index]
+        
+#         assert len(set(Source_test_g).intersection(set(Source_train_g)))==0 
+#         assert len(set(Target_test_g).intersection(set(Target_train_g)))==0 
+        
+
+        
+#         Source_train_is.append(Source_train_index); Source_test_is.append(Source_test_index)
+#         Target_train_is.append(Final_Target_train_index); Target_test_is.append(Final_Target_test_index)
+        
+#     return(Source_train_is,Target_train_is,Source_test_is,Target_test_is)
+
+
 def ds001246_cv_DA(source_events, target_events, source_groups, target_groups, n_iter=100, target_n=100, random_state = 0,
                       stratify_tgt=True):
     Source_test_is, Target_test_is, Source_train_is, Target_train_is =[],[],[],[]
-    splitter = LeavePGroupsOut(5)
-    # print((len(target_events)-target_n), target_n)
-    tgt_splitter = LeavePGroupsOut(2) #GroupShuffleSplit(n_splits=n_iter, train_size=(len(target_events)-target_n))
-    src_splits=list(splitter.split(source_events,groups=source_groups))
-    tgt_splits = list(tgt_splitter.split(target_events,groups=target_groups))
+    all_classes=set(target_events)
+    #GroupShuffleSplit(n_splits=n_iter, train_size=(len(target_events)-target_n))
+    # src_splits=list(splitter.split(source_events,groups=source_groups))
+    # tgt_splits = list(tgt_splitter.split(target_events,groups=target_groups))
     # n_iter =min( len(src_splits),len(tgt_splits))
     for i in range(n_iter):
-        Source_train_index, Source_test_index = src_splits[i]
-        Target_train_index, Target_test_index = tgt_splits[i]
+        Source_train_index, Source_test_index = next(StratifiedGroupKFold(5,shuffle=True, random_state=i).split(X=np.zeros(len(source_events)), y=source_events, groups=source_groups))
+       
+        Target_train_index, Target_test_index = next(StratifiedGroupKFold(4,shuffle=True, random_state=i).split(X=np.zeros(len(target_events)), y=target_events, groups=target_groups) )
+     
         
         stratify = target_events[Target_train_index] if stratify_tgt else None
         
@@ -206,7 +243,7 @@ def ds001246_cv_DA(source_events, target_events, source_groups, target_groups, n
         assert len(set(Source_test_g).intersection(set(Source_train_g)))==0 
         assert len(set(Target_test_g).intersection(set(Target_train_g)))==0 
         
-
+        if all_classes!=set(target_events[Final_Target_train_index]):continue
         
         Source_train_is.append(Source_train_index); Source_test_is.append(Source_test_index)
         Target_train_is.append(Final_Target_train_index); Target_test_is.append(Final_Target_test_index)
@@ -214,4 +251,49 @@ def ds001246_cv_DA(source_events, target_events, source_groups, target_groups, n
     return(Source_train_is,Target_train_is,Source_test_is,Target_test_is)
 
 
+class DomainAdaptationGOD:
+    def __init__(self,Source_X, Target_X, source_events, target_events, source_groups, target_groups, n_iter=100, target_n=100, random_state = 0,
+                          stratify_tgt=True):
+        
+        Source_train_is,Target_train_is,Source_test_is,Target_test_is = ds001246_cv_DA(source_events, target_events, source_groups, target_groups, n_iter, target_n, random_state,
+                              stratify_tgt)
+        self.Source_X=Source_X
+        self.Target_X=Target_X
+        self.Source_y=source_events
+        self.Target_y=target_events
+        self.Source_g=source_groups
+        self.Target_g=target_groups
+        self.Source_train_is=Source_train_is
+        self.Target_train_is=Target_train_is
+        self. Source_test_is=Source_test_is
+        self.Target_test_is=Target_test_is
+    def split(self):
+        
+        Source = {'train_X': [ self.Source_X[ element] for element in self.Source_train_is],
+                  'test_X': [ self.Source_X[ element] for element in self.Source_test_is],
+                  'train_y': [ self.Source_y[ element] for element in self.Source_train_is],
+                  'test_y': [ self.Source_y[ element] for element in self.Source_test_is],
+                  'train_g': [ self.Source_g[ element] for element in self.Source_train_is],
+                  'test_g': [ self.Source_g[ element] for element in self.Source_test_is],
+                  'train_i':  self.Source_train_is,
+                  'test_i':  self.Source_test_is,
+                  # 'X': self.Source_X,
+                  # 'y':  self.Source_y,
+                  # 'g':  self.Source_g
+                  }
+    
+        Target = {'train_X': [ self.Target_X[ element] for element in self.Target_train_is],
+                  'test_X': [ self.Target_X[ element] for element in self.Target_test_is],
+                  'train_y': [ self.Target_y[ element] for element in self.Target_train_is],
+                  'test_y': [ self.Target_y[ element] for element in self.Target_test_is],
+                  'train_g': [ self.Target_g[ element] for element in self.Target_train_is],
+                  'test_g': [ self.Target_g[ element] for element in self.Target_test_is],
+                  'train_i':  self.Target_train_is,
+                  'test_i':  self.Target_test_is,
+                  # 'X':  self.Target_X,
+                  # 'y':  self.Target_y,
+                  # 'g':  self.Target_g
+                  }
+        return(Source, Target)
+    
 #%%

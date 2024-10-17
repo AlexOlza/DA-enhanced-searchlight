@@ -26,8 +26,10 @@ np.random.seed(0)
 DATAPATH = '../data'
 DATAPATH_ds001246 = '../ds001246'
 class MyFullDataset(): # Loads the whole dataset for a domain, subject and region
-    def __init__(self, domain, subject, regions, remove_noise=True, data_dir=DATAPATH,dataset='own',average=False):
-        if dataset == 'own':            
+    def __init__(self, domain, subject, regions, remove_noise=True, dataset='own',average=False, semantic_groups = True, **kwargs):
+        if dataset == 'own':    
+            data_dir = kwargs.get('data_dir',DATAPATH)
+            self.data_dir=data_dir
             if isinstance(regions, str):
                 regions = [regions]
             self.regions=regions 
@@ -53,7 +55,8 @@ class MyFullDataset(): # Loads the whole dataset for a domain, subject and regio
         
         elif dataset=='ds001246_unprocessed':
             
-            data_dir = DATAPATH_ds001246 
+            data_dir = kwargs.get('data_dir',DATAPATH_ds001246)
+            self.data_dir=data_dir
             event_type='stimulus' if domain=='perception' else 'imagery'
             if isinstance(regions, str):
                 regions = [regions]
@@ -81,7 +84,8 @@ class MyFullDataset(): # Loads the whole dataset for a domain, subject and regio
             self.datax= x.drop(['trial', 'y'], axis=1).to_numpy()
         else:
             assert dataset == 'ds001246', 'Accepted values for arg. dataset are "own" (default) or "ds001246" or "ds001246_unprocessed"'
-            data_dir = DATAPATH_ds001246 
+            data_dir = kwargs.get('data_dir',DATAPATH_ds001246)
+            self.data_dir=data_dir
             if isinstance(regions, str):
                 regions = [regions]
             self.regions=regions 
@@ -96,11 +100,14 @@ class MyFullDataset(): # Loads the whole dataset for a domain, subject and regio
             
 
             self.datax = region_voxels[idx,:]
-            self.labels, self.fine_grained_labels, self.categories, self.fine_grained_categories = self.__group_categories__(categories[idx].ravel())
+            if semantic_groups:
+                self.labels, self.fine_grained_labels, self.categories, self.fine_grained_categories = self.__group_categories__(categories[idx].ravel())
+            else:
+                self.labels= categories[idx].ravel()
             self.trials = runs[idx].ravel()
             
     def __group_categories__(self,categories):    
-        category_meanings = pd.read_csv(f'{DATAPATH_ds001246}/category_meaning.csv')
+        category_meanings = pd.read_csv(f'{self.data_dir}/category_meaning.csv')
         merged = pd.merge(category_meanings,pd.DataFrame(categories,columns=['category_id']),on='category_id')
         return(merged.semantic_group_id.values,merged.category_id.values,merged.semantic_group.values, merged.category.values)
     def __getitem__(self, index):
