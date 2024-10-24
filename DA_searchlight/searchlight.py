@@ -174,18 +174,18 @@ else:
     # save nifti images
     
     searchlight_img_0.to_filename(os.path.join(out_dir,f'map_{NITER}iter_{radius}mm_BASELINE.nii.gz'))
-    searchlight_img_1.to_filename(os.path.join(out_dir,f'map_{NITER}iter_{radius}mm_RTLC.nii.gz'))
-    searchlight_img_2.to_filename(os.path.join(out_dir,f'map_{NITER}iter_{radius}mm_RTLCBASE.nii.gz'))
-    searchlight_img_3.to_filename(os.path.join(out_dir,f'map_{NITER}iter_{radius}mm_BASERTLC.nii.gz'))
+    searchlight_img_1.to_filename(os.path.join(out_dir,f'map_{NITER}iter_{radius}mm_{DA_name}.nii.gz'))
+    searchlight_img_2.to_filename(os.path.join(out_dir,f'map_{NITER}iter_{radius}mm_{DA_name}BASE.nii.gz'))
+    searchlight_img_3.to_filename(os.path.join(out_dir,f'map_{NITER}iter_{radius}mm_BASE{DA_name}.nii.gz'))
     
     #%%
     fig, ax = plt.subplots(4,1,figsize=(12,16))
     
     plotting.plot_stat_map(searchlight_img_0,bg_img = masker.mask_img,cut_coords=(0,-5,-4),threshold=0.5, title = f'Baseline > 0.5- {s}',axes =ax[0])
-    plotting.plot_stat_map(searchlight_img_1,bg_img = masker.mask_img,cut_coords=(0,-5,-4),threshold=0.5, title = f'RTLC  > 0.5- {s}',axes =ax[1])
-    plotting.plot_stat_map(searchlight_img_2,bg_img = masker.mask_img,cut_coords=(0,-5,-4),threshold=1, title = f'RTLC/Baseline > 1 - {s}',axes =ax[2])
-    plotting.plot_stat_map(searchlight_img_3,bg_img = masker.mask_img,cut_coords=(0,-5,-4),threshold=1, title = f'Baseline/RTLC > 1 - {s}',axes =ax[3])
-    fig.savefig(os.path.join(savefig_dir,f'fig_{NITER}iter_{radius}mm.png'))
+    plotting.plot_stat_map(searchlight_img_1,bg_img = masker.mask_img,cut_coords=(0,-5,-4),threshold=0.5, title = f'{DA_name}  > 0.5- {s}',axes =ax[1])
+    plotting.plot_stat_map(searchlight_img_2,bg_img = masker.mask_img,cut_coords=(0,-5,-4),threshold=1, title = f'{DA_name}/Baseline > 1 - {s}',axes =ax[2])
+    plotting.plot_stat_map(searchlight_img_3,bg_img = masker.mask_img,cut_coords=(0,-5,-4),threshold=1, title = f'Baseline/{DA_name} > 1 - {s}',axes =ax[3])
+    fig.savefig(os.path.join(savefig_dir,f'fig_{NITER}iter_{radius}mm{DA_name}.png'))
     
     #%%
     
@@ -202,14 +202,14 @@ else:
     searchlight_img_3 = new_img_like(tgt_masker.mask_img, scores_3D[3])
     # save nifti images
     
-    searchlight_img_0.to_filename(os.path.join(out_dir,f'map_{NITER}iter_12mm_NAIVE.nii.gz'))
+    searchlight_img_0.to_filename(os.path.join(out_dir,f'map_{NITER}iter_12mm_NAIVE{DA_name}.nii.gz'))
     
     #%%
     fig, ax = plt.subplots(4,1,figsize=(12,16))
     
     plotting.plot_stat_map(searchlight_img_0,bg_img = masker.mask_img,cut_coords=(0,-5,-4),threshold=0.5, title = f'Naive > 0.5- {s}',axes =ax[0])
-    plotting.plot_stat_map(searchlight_img_1,bg_img = masker.mask_img,cut_coords=(0,-5,-4),threshold=0.5, title = f'RTLC  > 0.5- {s}',axes =ax[1])
-    plotting.plot_stat_map(searchlight_img_2,bg_img = masker.mask_img,cut_coords=(0,-5,-4),threshold=1, title = f'RTLC/Naive > 1 - {s}',axes =ax[2])
-    plotting.plot_stat_map(searchlight_img_3,bg_img = masker.mask_img,cut_coords=(0,-5,-4),threshold=1, title = f'Naive/RTLC > 1 - {s}',axes =ax[3])
-    fig.savefig(os.path.join(savefig_dir,f'fig_naive_{NITER}iter_{radius}mm.png'))
+    plotting.plot_stat_map(searchlight_img_1,bg_img = masker.mask_img,cut_coords=(0,-5,-4),threshold=0.5, title = f'{DA_name}  > 0.5- {s}',axes =ax[1])
+    plotting.plot_stat_map(searchlight_img_2,bg_img = masker.mask_img,cut_coords=(0,-5,-4),threshold=1, title = f'{DA_name}/Naive > 1 - {s}',axes =ax[2])
+    plotting.plot_stat_map(searchlight_img_3,bg_img = masker.mask_img,cut_coords=(0,-5,-4),threshold=1, title = f'Naive/{DA_name} > 1 - {s}',axes =ax[3])
+    fig.savefig(os.path.join(savefig_dir,f'fig_naive_{NITER}iter_{radius}mm{DA_name}.png'))
 
