@@ -28,6 +28,8 @@ import warnings
 
 
 from sklearn.linear_model import LogisticRegression
+from adapt.instance_based import BalancedWeighting
+from adapt.feature_based import PRED
 from adapt.parameter_based import RegularTransferLC as RTLC
 from adapt.parameter_based import RegularTransferLR
 from matplotlib import pyplot as plt
@@ -41,6 +43,7 @@ target_domain = 'imagery'
 radius = 12
 subjects = sorted([S.split('/')[-1] for S in glob.glob(os.path.join('../data','perception','*'))])
 subject = subjects[ int(eval(sys.argv[1]))]
+
 s = re.sub('[0-9]+_','',subject).capitalize()
 NITER= int(eval(sys.argv[2]))
 savefig_dir = f'../figures/searchlight/{subject}'
@@ -64,21 +67,42 @@ class RTLC(RegularTransferLR):
 		# print(yt.shape) -> this print is present in the current release of ADAPT, and it is very annoying
 		
 		return super().fit(Xt, yt, **fit_params)
+class BW(BalancedWeighting):
+    def __init__(self,
+                 estimator=None,
+                 Xt=None,
+                 yt=None,
+                 gamma=0.5,
+                 copy=True,
+                 verbose=0, # adapt has default verbosity 1 which i want to avoid
+                 random_state=None,
+                 **params):
+        
+        names = self._get_param_names()
+        kwargs = {k: v for k, v in locals().items() if k in names}
+        kwargs.update(params)
+        super().__init__(**kwargs)
+        
 
+                
 #%%
-
-
+DA = [RTLC, BW, PRED][ int(eval(sys.argv[3]))]
+DA_name = DA.__name__
+print(DA_name)
 #%%
 searchlight, searchlight_naive, searchlight_DA = pd.DataFrame(), pd.DataFrame(), pd.DataFrame()
 from pathlib import Path
 pbase = os.path.join(out_dir,f'map_{NITER}iter_{radius}mm_BASELINE.csv')
 pnaive = os.path.join(out_dir,f'map_{NITER}iter_{radius}mm_NAIVE.csv')
-pda = os.path.join(out_dir,f'map_{NITER}iter_{radius}mm_RTLC.csv')
+pda = os.path.join(out_dir,f'map_{NITER}iter_{radius}mm_{DA_name}.csv')
 is_file = {'baseline': Path(pbase).is_file(), 'naive': Path(pnaive).is_file(), 'da': Path(pda).is_file()}
+if is_file['baseline']: searchlight=pd.read_csv(pbase)
+if is_file['naive']: searchlight_naive=pd.read_csv(pnaive)
+if is_file['da']: searchlight_DA = pd.read_csv(pda)
 if all(is_file.values()):
     print('All results files found, nothing done.')
 else:
-    
+    print(is_file)
     bold_data, events, masker = load_data(source_domain, subject)
     tgt_data, tgt_events, tgt_masker = load_data(target_domain, subject)
     
@@ -119,13 +143,13 @@ else:
         ytrain_tgt = tgt_events.target_category.values[Target_train_is[i]]
         if not is_file['baseline']: searchlight[i] = search_light(xtrain, ytrain,LogisticRegression,A,xtest,ytest,scoring = balanced_accuracy_score, verbose=0) 
         if not is_file['naive']: searchlight_naive[i] = search_light(xtrain_naive, ytrain_naive,LogisticRegression,A,xtest,ytest,scoring = balanced_accuracy_score, verbose=0) 
-        if not is_file['da']: searchlight_DA[i] = search_light(xtrain, ytrain,LogisticRegression,A,xtest,ytest,scoring = balanced_accuracy_score,DA = RTLC, X_tgt = xtrain_tgt, y_tgt = ytrain_tgt, verbose=0) 
+        if not is_file['da']: searchlight_DA[i] = search_light(xtrain, ytrain,LogisticRegression,A,xtest,ytest,scoring = balanced_accuracy_score,DA = DA, X_tgt = xtrain_tgt, y_tgt = ytrain_tgt, verbose=0) 
         
-    searchlight.to_csv(pbase,index=False) 
+    if not is_file['baseline']: searchlight.to_csv(pbase,index=False) 
     
-    searchlight_naive.to_csv(pnaive,index=False)
+    if not is_file['naive']: searchlight_naive.to_csv(pnaive,index=False)
     
-    searchlight_DA.to_csv(pda,index=False)
+    if not is_file['da']: searchlight_DA.to_csv(pda,index=False)
     
     #%%
     searchlight_mean = searchlight.mean(axis=1)
@@ -188,3 +212,4 @@ else:
     plotting.plot_stat_map(searchlight_img_2,bg_img = masker.mask_img,cut_coords=(0,-5,-4),threshold=1, title = f'RTLC/Naive > 1 - {s}',axes =ax[2])
     plotting.plot_stat_map(searchlight_img_3,bg_img = masker.mask_img,cut_coords=(0,-5,-4),threshold=1, title = f'Naive/RTLC > 1 - {s}',axes =ax[3])
     fig.savefig(os.path.join(savefig_dir,f'fig_naive_{NITER}iter_{radius}mm.png'))
+
