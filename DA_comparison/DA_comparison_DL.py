@@ -106,7 +106,7 @@ methods = [DeepCORAL, DANN, MCD, FineTuning ]
 method_names = [m.__name__ for m in methods]
 methods = {n:m for n,m in zip(method_names,methods)}
 parameters = {m : {} for m in method_names}
-
+living=True
 
 method = sys.argv[4]
 NITER_ = int(eval(sys.argv[6]))
@@ -126,7 +126,7 @@ fulldf=pd.DataFrame()
 if dataset =='own':
     outdir = os.path.join('../results/DA_comparison', region_name, f'{source_domain}_{target_domain}', subject)
 else:
-    outdir = os.path.join(f'../results/DA_comparison/{dataset}_no9', region_name, f'{source_domain}_{target_domain}', subject)
+    outdir = os.path.join(f'../results/DA_comparison/{dataset}_Living', region_name, f'{source_domain}_{target_domain}', subject)
 if not os.path.exists(outdir):
     os.makedirs(outdir)
 """ MAIN PROGRAM """
@@ -174,14 +174,22 @@ if not Path(os.path.join(outdir, f'DA_{method}.csv')).is_file():
             
             # print('Original dataset shape %s' % Counter(train_label))
             ros = RandomOverSampler(random_state=i)
-
+            if living:
+                train_label[train_label!=1]=0
+                test_label[test_label!=1]=0
+            # print('Original dataset shape %s' % Counter(train_label))
+            ros = RandomOverSampler(random_state=i)
+           
             if oversample: train, train_label = ros.fit_resample(train, train_label)
             # print('Resampled dataset shape %s' % Counter(train_label))
             # We select a number "Nt" of instances from the target domain (usually Targetery)
             I_train, I_test, IL_train, IL_test = d.Target_train_X[i], d.Target_test_X[i], d.Target_train_y[i], d.Target_test_y[i]
             # I_train contains "Nt" instances. Those are passed to the ADAPT method
             I_test_idx =d.Target_test_i[i]
-            # print('Original target dataset shape %s' % Counter(IL_train))
+            if living:
+                IL_train[IL_train!=1]=0
+                IL_test[IL_test!=1]=0
+            
             if oversample: I_train, IL_train = ros.fit_resample(I_train, IL_train)
             # print('Resampled target dataset shape %s' % Counter(IL_train))
             

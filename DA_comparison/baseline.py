@@ -80,11 +80,11 @@ concat_tgt=int(eval(sys.argv[6]))
 concat_tgt_marker='' if concat_tgt==0 else '_withtgt'
 splitting='StratifiedGroupKFold'
 n_folds = 5
-
+living=True
 if dataset =='own':
     outdir = os.path.join('../results/DA_comparison', region_name, f'{source_domain}_{target_domain}', subject)
 else:
-    outdir = os.path.join(f'../results/DA_comparison/{dataset}_no9', region_name, f'{source_domain}_{target_domain}', subject)
+    outdir = os.path.join(f'../results/DA_comparison/{dataset}_Living', region_name, f'{source_domain}_{target_domain}', subject)
 if not os.path.exists(outdir):
     os.makedirs(outdir)
 
@@ -143,17 +143,13 @@ if not False:#Path(fname).is_file():
             test = d.Source_test_X[i]
             I_train, I_test, IL_train, IL_test = d.Target_train_X[i], d.Target_test_X[i], d.Target_train_y[i], d.Target_test_y[i]
             I_test_idx =d.Target_test_i[i]
-            if dataset== 'ds001246':
-                scaler_source=StandardScaler().fit(train)
-                train =scaler_source.transform(train)
-                test = scaler_source.transform(test)
-                scaler_tgt=StandardScaler().fit(I_train)
-                I_train =scaler_tgt.transform(I_train)
-                I_test =scaler_tgt.transform(I_test)
-                
+           
+        
             train_label = np.ravel(d.Source_train_y[i])  
             test_label = np.ravel(d.Source_test_y[i])
-            
+            if living:
+                train_label[train_label!=1]=0
+                test_label[test_label!=1]=0
             # print('Original dataset shape %s' % Counter(train_label))
             ros = RandomOverSampler(random_state=i)
 
@@ -163,7 +159,11 @@ if not False:#Path(fname).is_file():
             I_train, I_test, IL_train, IL_test = d.Target_train_X[i], d.Target_test_X[i], d.Target_train_y[i], d.Target_test_y[i]
             # I_train contains "Nt" instances. Those are passed to the ADAPT method
             I_test_idx =d.Target_test_i[i]
-            # print('Original target dataset shape %s' % Counter(IL_train))
+            if living:
+                IL_train[IL_train!=1]=0
+                IL_test[IL_test!=1]=0
+            # print('Original dataset shape %s' % Counter(train_label))
+            
             if oversample: I_train, IL_train = ros.fit_resample(I_train, IL_train)
             # print('Resampled target dataset shape %s' % Counter(IL_train))
             # We select a number "Nt" of instances from the target domain (usually imagery)
