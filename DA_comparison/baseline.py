@@ -58,7 +58,7 @@ dataset = int(eval(sys.argv[7]))
 shuffle = False
 average=False
 binary=False
-oversample=False
+oversample=True
 if dataset==0:
     dataset='own'
     subjects = sorted([S.split('/')[-1] for S in glob.glob(os.path.join('../data','perception','*'))])
@@ -80,11 +80,11 @@ concat_tgt=int(eval(sys.argv[6]))
 concat_tgt_marker='' if concat_tgt==0 else '_withtgt'
 splitting='StratifiedGroupKFold'
 n_folds = 5
-living=True
+living=False
 if dataset =='own':
     outdir = os.path.join('../results/DA_comparison', region_name, f'{source_domain}_{target_domain}', subject)
 else:
-    outdir = os.path.join(f'../results/DA_comparison/{dataset}_allpresent', region_name, f'{source_domain}_{target_domain}', subject)
+    outdir = os.path.join(f'../results/DA_comparison/{dataset}_allpresent_oversampled', region_name, f'{source_domain}_{target_domain}', subject)
 if not os.path.exists(outdir):
     os.makedirs(outdir)
 

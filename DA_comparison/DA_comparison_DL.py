@@ -86,7 +86,7 @@ dataset = int(eval(sys.argv[7]))
 shuffle = False
 average=False
 binary=False
-oversample=False
+oversample=True
 if dataset==0:
     dataset='own'
     subjects = sorted([S.split('/')[-1] for S in glob.glob(os.path.join('../data','perception','*'))])
@@ -106,7 +106,7 @@ methods = [DeepCORAL, DANN, MCD, FineTuning ]
 method_names = [m.__name__ for m in methods]
 methods = {n:m for n,m in zip(method_names,methods)}
 parameters = {m : {} for m in method_names}
-living=True
+living=False
 
 method = sys.argv[4]
 NITER_ = int(eval(sys.argv[6]))
@@ -126,7 +126,7 @@ fulldf=pd.DataFrame()
 if dataset =='own':
     outdir = os.path.join('../results/DA_comparison', region_name, f'{source_domain}_{target_domain}', subject)
 else:
-    outdir = os.path.join(f'../results/DA_comparison/{dataset}_allpresent', region_name, f'{source_domain}_{target_domain}', subject)
+    outdir = os.path.join(f'../results/DA_comparison/{dataset}_allpresent_oversampled', region_name, f'{source_domain}_{target_domain}', subject)
 if not os.path.exists(outdir):
     os.makedirs(outdir)
 """ MAIN PROGRAM """
