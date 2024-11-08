@@ -157,7 +157,8 @@ compare_algorithms <- function(pr) {
   for (k in seq_along(pr$rankings)) {
     ranking_k <- pr$rankings[[k]] # matrix of rankings
     lines_k <- pr$lines[[k]]      # matrix of intervals
-    
+    #print(lines_k)
+    #print(length(lines_k))
     # Compare each pair of algorithms i and j
     for (i in seq_along(algorithms)) {
       for (j in seq_along(algorithms)) {
@@ -169,6 +170,7 @@ compare_algorithms <- function(pr) {
           if (x < y) {
             # Check if both x and y are not in any of the intervals in lines_k
             in_interval <- FALSE
+            if (length(lines_k)>0){
             for (interval in 1:nrow(lines_k)) {
               lower <- min(lines_k[interval, 1], lines_k[interval, 2])
               upper <- max(lines_k[interval, 1], lines_k[interval, 2])
@@ -177,7 +179,7 @@ compare_algorithms <- function(pr) {
                 break
               }
             }
-            
+            }
             # If not in an interval, count this as a valid comparison
             if (!in_interval) {
               result[i, j] <- result[i, j] + 1
@@ -213,13 +215,21 @@ analysis_CONCAT <- function(results,region,title, savefigpath){
   }
   ranking <- list()
   horizontal.lines <- list()
-  fname <-paste(savefigpath,'completely_Aggregated_CONCAT_',region,'.png',sep='')
+  fname <-paste(savefigpath,'completely_Aggregated_CONCAT_',region,title,'.png',sep='')
   #png(filename=fname, width=900*4, height=900*5,res=300)
-  
-  widedf <- data.frame(matrix(NA, ncol=1, nrow=nrow(df)/length(unique(df$Method))))[-1]
-  for (m in unique(df$Method)){
-    widedf[,m]<-df[df$Method==m,'bacc']
-  }
+  # Determine the maximum number of rows needed for any method
+    max_rows <- max(table(df$Method))
+    methods <- sort(unique(df$Method))
+    # Create an empty data frame with max_rows rows and one column per method
+    widedf <- data.frame(matrix(NA, nrow = max_rows, ncol = length(methods)))
+    colnames(widedf) <- methods  # Set method names as column names
+    
+    # Fill widedf with bacc values for each method, allowing for mismatched row lengths
+    for (m in methods) {
+        bacc_values <- df[df$Method == m, 'bacc']
+        widedf[1:length(bacc_values), m] <- bacc_values
+    }
+
     # FREQUENTIST Critical Difference diagrams
     # STEP 1) Assess whether all algorithms' performances come from the same distribution (H0). 
     # In case of rejection, there is at least one algorithm that performs differently to others and we will do a post test 
@@ -232,7 +242,7 @@ analysis_CONCAT <- function(results,region,title, savefigpath){
    
       pv.adj <- res$corrected.pval
      
-      png(fname,width = 1200, height=600, res=300)
+      png(fname,width = 1800, height=600, res=300)
       par(mar = c(2,2,4,1))
       #plotCD(widedf,alpha=0.05, title = s)
       horizontal.lines <-plotRanking(pv.adj, res$summary, cex = 0.6)
@@ -243,9 +253,8 @@ analysis_CONCAT <- function(results,region,title, savefigpath){
     else print('Non significant test')
     return(list('rankings'=ranking,'lines'=horizontal.lines))
   }
-analysis_agg_Nt_CONCAT <- function(results){
+analysis_agg_Nt_CONCAT <- function(results,savefigpath){
   print('ANALYSIS AGGREGATED OVER NT')
-  savefigpath <-'../../figures/CD_diagrams/'
   subjects<-unique(results$Subject)
   df <- results
   ranking <- list()
@@ -256,9 +265,17 @@ analysis_agg_Nt_CONCAT <- function(results){
   i=1
   for (s in subjects){
     df_subj <- df[df$Subject==s, c('bacc','Method')]
-    widedf <- data.frame(matrix(NA, ncol=1, nrow=nrow(df_subj)/length(unique(df_subj$Method))))[-1]
-    for (m in sort(unique(df_subj$Method))){
-      widedf[,m]<-df_subj[df_subj$Method==m,'bacc']
+    # Determine the maximum number of rows needed for any method
+    max_rows <- max(table(df_subj$Method))
+    methods <- sort(unique(df_subj$Method))
+    # Create an empty data frame with max_rows rows and one column per method
+    widedf <- data.frame(matrix(NA, nrow = max_rows, ncol = length(methods)))
+    colnames(widedf) <- methods  # Set method names as column names
+    
+    # Fill widedf with bacc values for each method, allowing for mismatched row lengths
+    for (m in methods) {
+        bacc_values <- df_subj[df_subj$Method == m, 'bacc']
+        widedf[1:length(bacc_values), m] <- bacc_values
     }
     
     # FREQUENTIST Critical Difference diagrams
@@ -291,5 +308,63 @@ analysis_agg_Nt_CONCAT <- function(results){
   }
  
   dev.off()
+  return(list('rankings'=ranking,'lines'=horizontal.lines))
+}
+
+analysis_agg_Nt_CONCAT_individual_plots <- function(results, savefigpath, title){
+  print('ANALYSIS AGGREGATED OVER NT')
+  subjects<-unique(results$Subject)
+  df <- results
+  ranking <- list()
+  horizontal.lines <- list()
+  i=1
+  for (s in subjects){
+    fname <-paste(savefigpath,s,'_concat.png',sep='')
+    png(filename=fname, width=900*4, height=900*5,res=300)
+    df_subj <- df[df$Subject==s, c('bacc','Method')]
+    # Determine the maximum number of rows needed for any method
+    max_rows <- max(table(df_subj$Method))
+    methods <- sort(unique(df_subj$Method))
+    # Create an empty data frame with max_rows rows and one column per method
+    widedf <- data.frame(matrix(NA, nrow = max_rows, ncol = length(methods)))
+    colnames(widedf) <- methods  # Set method names as column names
+    
+    # Fill widedf with bacc values for each method, allowing for mismatched row lengths
+    for (m in methods) {
+        bacc_values <- df_subj[df_subj$Method == m, 'bacc']
+        widedf[1:length(bacc_values), m] <- bacc_values
+    }
+    
+    # FREQUENTIST Critical Difference diagrams
+    # STEP 1) Assess whether all algorithms' performances come from the same distribution (H0). 
+    # In case of rejection, there is at least one algorithm that performs differently to others and we will do a post test # nolint
+    
+    ftest<- friedmanTest(widedf)
+    if (ftest$p.value<=0.05) {
+      #print('Friedman test significant, procceeding with Nemenyi post-hoc test for pairwise comparisons')
+      res <- postHocTest(widedf, test = "aligned ranks", correct = 'shaffer', use.rank=TRUE)
+      #pv.matrix <- postHocTest(data=widedf, control=NULL)
+      pv.adj <- res$corrected.pval
+      r <- rankMatrix(widedf)
+      r.means <- colMeans(r)
+      #drawAlgorithmGraph(pvalue.matrix = pv.adj, mean.value = r.means)
+      ordering <- order(summarizeData(widedf))
+      
+      #plotPvalues(pv.adj,alg.order=ordering)+ggtitle(s)#+theme(aspect.ratio=1,plot.margin = margin(0,0,0,0))
+      #ggsave(paste(savefigpath,s,'_pvalues.png',sep=''),width=12,height=10)
+      
+      #png(paste(savefigpath,s,'.png',sep=''))
+      #plotCD(widedf,alpha=0.05, title = s)
+      horizontal.lines[s] <- plotRanking(pv.adj, res$summary, cex = 0.9)
+      title(title, cex=0.5)
+      i=i+1
+    
+    ranking[s] <- list(res$summary)  
+    }
+    else print(paste(c('Non-significant for ',s),sep=' '))
+    dev.off()
+  }
+ 
+  
   return(list('rankings'=ranking,'lines'=horizontal.lines))
 }

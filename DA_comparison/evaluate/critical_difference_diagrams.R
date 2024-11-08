@@ -19,21 +19,32 @@ library('scmamp')
 
 
 source("aux_CD_diagrams.R", encoding = "UTF-8")
+dataset = c('ds001246')#commandArgs(trailingOnly=TRUE)
+if (dataset[1]=='own'){
+  allresultspath <- '../../results/DA_comparison/allresults_DA_comparison.csv' 
+  savefigpath <-'../../figures/CD_diagrams/'
+  comparison_fname <- '../../figures/CD_diagrams/table_CD_diagrams.csv'
+  region_name <- 'allregions'
+} else{
+  region_name <- 'VC'
+  allresultspath <- '../../results/DA_comparison/ds001246_allpresent_oversampled/allresults_DA_comparison.csv' 
+  savefigpath <-'../../figures/CD_diagrams/ds001246_allpresent_oversampled/'
+  comparison_fname <- '../../figures/CD_diagrams/ds001246_allpresent_oversampled/table_CD_diagrams.csv'
+  
+}
 
-allresultspath <- '../../results/DA_comparison/allresults_DA_comparison.csv' 
-savefigpath <-'../../figures/CD_diagrams/'
 if (! dir.exists(savefigpath)) dir.create(file.path(savefigpath),recursive = TRUE)
 col='X100'
 allresults <- read.csv(allresultspath,header=TRUE)
 allresults <- allresults[allresults$Domain=='imagery',]
-
+allresults <- allresults[rowSums(allresults == -1) == 0, ]
 subjects<-unique(allresults$Subject)
 methods<-unique(allresults$Method)
-
 
 # 2) CONCATENATE NT
 i<-1
 cols <- names(allresults[grepl("X[0-9]", names(allresults))])
+
 #cols=c('X100')
 results <- c()
 for (s in subjects){
@@ -50,9 +61,11 @@ for (s in subjects){
   }
 }
 results <- as.data.frame(results)
-pr <-analysis_agg_Nt_CONCAT(results)
+results[results$Method=='Finetuning','Method'] <- 'FT'
+results[results$Method=='DeepCORAL','Method'] <- 'DCORAL'
+pr <-analysis_agg_Nt_CONCAT(results,savefigpath)
 comparison <- compare_algorithms(pr)
-write.csv(comparison,'../../figures/CD_diagrams/table_CD_diagrams.csv')
+write.csv(comparison,comparison_fname)
 i<-1
 results <- c()
 for (s in subjects){
@@ -70,6 +83,14 @@ for (s in subjects){
 }
 results <- as.data.frame(results)
 
-pr2<- analysis_CONCAT(results, 'allregions','',savefigpath)
+results[results$Method=='FineTuning','Method'] <- 'FT'
+results[results$Method=='DeepCORAL','Method'] <- 'DCORAL'
+#pr2<- analysis_CONCAT(results, region_name,'',savefigpath)
 
 
+i<-1
+for (s in sort(subjects)){
+  title_s <- paste('Subject',i,sep=' ')
+  analysis_agg_Nt_CONCAT_individual_plots(results[results$Subject==s,],savefigpath, title_s)
+  i<-i+1
+  }
