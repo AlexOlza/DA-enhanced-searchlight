@@ -25,7 +25,7 @@ from nilearn import plotting
 from nilearn import masking
 from nilearn.image import new_img_like
 import warnings
-
+from sklearn.metrics import balanced_accuracy_score
 
 from sklearn.linear_model import LogisticRegression
 from adapt.instance_based import BalancedWeighting
@@ -119,8 +119,7 @@ else:
     
     Source_train_is,Target_train_is = searchlight_cv_DA(events.target_category.values,tgt_events.target_category.values, g,g_tgt,NITER )
     
-    from sklearn.metrics import balanced_accuracy_score
-    # def scoring_fn(estimator, X_test, y_test):
+    
     try:
         process_mask, process_mask_affine = masking.load_mask_img(
             tgt_masker.mask_img
@@ -158,9 +157,7 @@ else:
     #%%
     scores_3D = {}
     i=0
-    # searchlight_mean[searchlight_mean<0.5]=1e-5
-    # searchlight_DA_mean[searchlight_DA_mean<0.5]=1e-5
-    # searchlight_naive_mean[searchlight_naive_mean<0.5]=1e-5
+
     for mean in (searchlight_mean,searchlight_DA_mean,searchlight_DA_mean/searchlight_mean, searchlight_mean/searchlight_DA_mean):
         scores_3D[i] = np.zeros(process_mask.shape)
         scores_3D[i][process_mask] = mean.values
@@ -173,7 +170,7 @@ else:
     
     # save nifti images
     
-    searchlight_img_0.to_filename(os.path.join(out_dir,f'map_{NITER}iter_{radius}mm_BASELINE.nii.gz'))
+    if not is_file['baseline']: searchlight_img_0.to_filename(os.path.join(out_dir,f'map_{NITER}iter_{radius}mm_BASELINE.nii.gz'))
     searchlight_img_1.to_filename(os.path.join(out_dir,f'map_{NITER}iter_{radius}mm_{DA_name}.nii.gz'))
     searchlight_img_2.to_filename(os.path.join(out_dir,f'map_{NITER}iter_{radius}mm_{DA_name}BASE.nii.gz'))
     searchlight_img_3.to_filename(os.path.join(out_dir,f'map_{NITER}iter_{radius}mm_BASE{DA_name}.nii.gz'))
