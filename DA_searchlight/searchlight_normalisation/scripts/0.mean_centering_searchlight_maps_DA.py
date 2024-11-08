@@ -10,7 +10,7 @@ import sys
 warnings.simplefilter("error") # Convert warnings into an error to traceback
 algorithm = sys.argv[1]
 NITER=sys.argv[2]
-if algorithm in ['BASELINE','NAIVE','RTLC', 'PERCEPTION']: offset = 0.5
+if algorithm in ['BASELINE','NAIVE','RTLC','BW', 'PERCEPTION']: offset = 0.5
 else: offset = 1
 print('Centering offset: ', offset)
 # SET FILE STRUCTURE
