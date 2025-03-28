@@ -40,7 +40,7 @@ from dataManipulation.whole_brain import load_data
 #%%
 source_domain = 'perception'
 target_domain = 'imagery'
-radius = 12
+radius = int(eval(sys.argv[-1]))#12
 subjects = sorted([S.split('/')[-1] for S in glob.glob(os.path.join('../data','perception','*'))])
 subject = subjects[ int(eval(sys.argv[1]))]
 
