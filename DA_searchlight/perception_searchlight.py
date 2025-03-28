@@ -32,7 +32,7 @@ from pathlib import Path
 #%%
 source_domain = 'perception'
 target_domain = 'perception'
-radius = int(eval(sys.argv[-1]))
+radius = [6, 9, 15, 18][int(eval(sys.argv[-1]))]#12
 subjects = sorted([S.split('/')[-1] for S in glob.glob(os.path.join('../data','perception','*'))])
 subject = subjects[ int(eval(sys.argv[1]))]
 s = re.sub('[0-9]+_','',subject).capitalize()
