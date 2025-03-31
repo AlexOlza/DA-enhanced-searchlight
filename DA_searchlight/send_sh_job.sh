@@ -11,12 +11,12 @@
 #SBATCH --ntasks=1
 
 # Advanced use
-#SBATCH --cpus-per-task=8
+#SBATCH --cpus-per-task=6
 # #SBATCH --threads-per-core=2
 # #SBATCH --ntasks-per-core=2
 
 # Required memory (Default 2GB)
-#SBATCH --mem-per-cpu=4G
+#SBATCH --mem-per-cpu=2G
 
 # Select one partition
 # ML-CPU // Cola de trabajos en CPUs con AVX-512 y (VNNI Vector Neural Network Instructions)
