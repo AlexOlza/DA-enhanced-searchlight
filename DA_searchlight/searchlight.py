@@ -129,7 +129,7 @@ else:
         tgt_masker.mask_img
     )
     for i in tqdm(range(NITER)):
-	is_file = {'baseline': Path(pbase).is_file(), 'naive': Path(pnaive).is_file(), 'da': Path(pda).is_file()}
+        s_file = {'baseline': Path(pbase).is_file(), 'naive': Path(pnaive).is_file(), 'da': Path(pda).is_file()}
         Target_test_is = np.ones(tgt_events.target_category.values.size, dtype=bool)
         Target_test_is[Target_train_is[i]] = False
         xtrain = X[Source_train_is[i]]
