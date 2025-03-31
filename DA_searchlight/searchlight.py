@@ -40,7 +40,7 @@ from dataManipulation.whole_brain import load_data
 #%%
 source_domain = 'perception'
 target_domain = 'imagery'
-radius = [6, 9, 15, 18][int(eval(sys.argv[-1]))]#12
+radius = [6, 9, 15, 18][int(eval(sys.argv[4]))]#12
 subjects = sorted([S.split('/')[-1] for S in glob.glob(os.path.join('../data','perception','*'))])
 subject = subjects[ int(eval(sys.argv[1]))]
 
@@ -129,6 +129,7 @@ else:
         tgt_masker.mask_img
     )
     for i in tqdm(range(NITER)):
+	is_file = {'baseline': Path(pbase).is_file(), 'naive': Path(pnaive).is_file(), 'da': Path(pda).is_file()}
         Target_test_is = np.ones(tgt_events.target_category.values.size, dtype=bool)
         Target_test_is[Target_train_is[i]] = False
         xtrain = X[Source_train_is[i]]
