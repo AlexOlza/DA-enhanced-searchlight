@@ -7,7 +7,7 @@ NITER=100
 n_subj=18
 n_reg=14
 
-declare -a methods=("DeepCORAL", "DANN", "MCD", "FineTuning")
+declare -a methods=("DeepCORAL" "DANN" "MCD" "FineTuning")
 
 ## now loop through the above array
 for method in "${methods[@]}"
