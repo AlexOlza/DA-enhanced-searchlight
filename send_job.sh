@@ -1,22 +1,22 @@
 #!/bin/bash
 
 # Job name
-#SBATCH --job-name=raw
+##SBATCH --job-name=schlight
 
 # Define the files which will contain the Standard and Error output
-#SBATCH --output=/home/aolza/scratch/projects/imagination_perception/outputs/M8_%x.out
-#SBATCH --error=/home/aolza/scratch/projects/imagination_perception/outputs/M8_%x.err
+##SBATCH --output=/home/aolza/scratch/projects/imagination_perception/outputs/M8_%x.out
+##SBATCH --error=/home/aolza/scratch/projects/imagination_perception/outputs/M8_%x.err
 
 # Number of tasks that compose the job
 #SBATCH --ntasks=1
 
 # Advanced use
-#SBATCH --cpus-per-task=6
+#SBATCH --cpus-per-task=4
 # #SBATCH --threads-per-core=2
 # #SBATCH --ntasks-per-core=2
 
 # Required memory (Default 2GB)
-#SBATCH --mem-per-cpu=2G
+#SBATCH --mem-per-cpu=4G
 
 # Select one partition
 # ML-CPU // Cola de trabajos en CPUs con AVX-512 y (VNNI Vector Neural Network Instructions)
