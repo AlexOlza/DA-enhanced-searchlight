@@ -8,6 +8,11 @@ Created on Fri Sep 15 16:37:53 2023
 from sklearn.model_selection import  train_test_split, LeavePGroupsOut, GroupShuffleSplit, StratifiedGroupKFold
 import matplotlib.pyplot as plt
 import numpy as np
+from sklearn.decomposition import FastICA, PCA, FactorAnalysis, TruncatedSVD
+from sklearn.cluster import FeatureAgglomeration
+from sklearn.random_projection import SparseRandomProjection
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import StandardScaler
 import pandas as pd
 
 class DomainAdaptationData:
@@ -216,3 +221,14 @@ class DomainAdaptationGOD:
         return(Source, Target)
     
 #%%
+def reduce_dim(train, I_train, test, I_test, n_components, method):
+    assert method in range(1,3)
+    reducer = [TruncatedSVD(n_components), SparseRandomProjection(n_components), FastICA(n_components)][method-1]
+    pipe = Pipeline([('scaler', StandardScaler()), ('reducer', reducer)])
+    pipe_tgt = Pipeline([('scaler', StandardScaler()), ('reducer', reducer)])
+    train = pipe.fit_transform(train)
+    test = pipe.transform(test)
+    # ica_tgt = FastICA(100).fit(I_train)
+    I_train = pipe_tgt.fit_transform(I_train)
+    I_test = pipe_tgt.transform(I_test)
+    return train, I_train, test, I_test

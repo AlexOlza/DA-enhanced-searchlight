@@ -35,13 +35,13 @@ from tqdm import tqdm
 import warnings
 from imblearn.over_sampling import RandomOverSampler
 from collections import Counter
-from sklearn.decomposition import FastICA
+
 if not sys.warnoptions:
     warnings.simplefilter("ignore")
     os.environ["PYTHONWARNINGS"] = "ignore" # Also affect subprocesses
 
 """ OWN IMPORTS """
-from dataManipulation.loadDataDA import DomainAdaptationData, DomainAdaptationSplitter, DomainAdaptationGOD
+from dataManipulation.loadDataDA import DomainAdaptationData, DomainAdaptationSplitter, DomainAdaptationGOD, reduce_dim
 from dataManipulation.loadData import MyFullDataset
 
 #%%
@@ -83,6 +83,7 @@ class Task_model(SequentialModule):
 source_domain =  sys.argv[1]
 target_domain =  sys.argv[2]
 dataset = int(eval(sys.argv[7]))
+REDUCE_DIM = int(eval(sys.argv[8]))
 shuffle = False
 average=False
 binary=False
@@ -98,17 +99,17 @@ if dataset==0:
 else:
     dataset ='ds001246'
     subjects = sorted([S.split('/')[-1].split('.')[0] for S in glob.glob(os.path.join(f'../{dataset}','*'))])
-    region = sys.argv[5]
+    region = sys.argv[4]
     region_name = region
 subject = subjects[ int(eval(sys.argv[3]))]
-
+print(subject)
 methods = [DeepCORAL, DANN, MCD, FineTuning ]
 method_names = [m.__name__ for m in methods]
 methods = {n:m for n,m in zip(method_names,methods)}
 parameters = {m : {} for m in method_names}
 living=False
 
-method = sys.argv[4]
+method = sys.argv[5]
 NITER_ = int(eval(sys.argv[6]))
 splitting='StratifiedGroupKFold'
 n_folds = 5
@@ -140,10 +141,12 @@ assert method in method_names, f'Unrecognized DA method {method}. Available meth
 DA_method =  methods[method]
 params = parameters[method]
 
-
+REDUCE_DIM_NAME = ['NONE', 'TSVD', 'SRP', 'ICA'][REDUCE_DIM]
+result_filename = os.path.join(outdir, f'DA_{method}_reduce{REDUCE_DIM_NAME}.csv')
+print('WILL PRODUCE FILE: ', result_filename)
 print(f'Fitting {method} for subject {subject} in region {region_name}...')
 Nts=range(10,110, 10) if dataset=='own' else [200, 250, 300]
-if not Path(os.path.join(outdir, f'DA_{method}.csv')).is_file():
+if not Path(result_filename).is_file():
     remove_noise=True
     Source_X, Source_y, Source_g = MyFullDataset(source_domain, subject, region, remove_noise=remove_noise,dataset=dataset)[:]
     Target_X, Target_y, Target_g = MyFullDataset(target_domain, subject, region, remove_noise=remove_noise,dataset=dataset)[:]
@@ -162,7 +165,7 @@ if not Path(os.path.join(outdir, f'DA_{method}.csv')).is_file():
         else:
             Source, Target = DomainAdaptationGOD(Source_X, Target_X, Source_y, Target_y, Source_g, Target_g).split()
         d = DomainAdaptationData(Source, Target) #Just a wrapping class for convenience.
-        prediction_fname =os.path.join(outdir, f'{method}_preds_{Nt}.csv')
+        prediction_fname =os.path.join(outdir, f'{method}_preds_{Nt}_reduce{REDUCE_DIM_NAME}.csv')
         NITER =len(d.Target_train_y)
         prediction_matrix =-1 *np.ones((len(Target_y),NITER))
         for i in tqdm(range(NITER)):
@@ -193,16 +196,11 @@ if not Path(os.path.join(outdir, f'DA_{method}.csv')).is_file():
             if oversample: I_train, IL_train = ros.fit_resample(I_train, IL_train)
             # print('Resampled target dataset shape %s' % Counter(IL_train))
             
-            if ICA:
-                ica = FastICA(100).fit(train)
-                train = ica.transform(train)
-                test = ica.transform(test)
-                ica_tgt = FastICA(100).fit(I_train)
-                I_train = ica_tgt.transform(I_train)
-                I_test = ica_tgt.transform(I_test)
+            if REDUCE_DIM!=0:
+                train, I_train, test, I_test = reduce_dim(train, I_train, test, I_test, n_components = 100, method=REDUCE_DIM)    
 
             n_voxels = train.shape[-1]
-           
+            
             if method=='FineTuning':
                 encoder = Encoder_model(n_voxels,10)
                 task = Task_model(n_voxels)
@@ -347,7 +345,7 @@ if not Path(os.path.join(outdir, f'DA_{method}.csv')).is_file():
     balanced_accuracy_im['Domain']=target_domain
     balanced_accuracy_imtr['Domain']=target_domain+'_tr'
     results= pd.concat([balanced_accuracy,balanced_accuracy_im,balanced_accuracy_imtr])
-    results.to_csv(os.path.join(outdir, f'DA_{method}.csv'))
+    results.to_csv(result_filename)
     
     print(f'Done {subject}: ',time()-t0)
 
