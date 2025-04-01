@@ -15,7 +15,10 @@ do
    echo $method
    for (( subj=0; subj<$n_subj; subj++ )); # for each subject (only first n_subj done here)
 	do
-	sbatch --job-name='s${subj}dr${dim_reduction}${method}' --out='./slurm_logs/${method}_s${subj}data${dataset}dim${dim_reduction}.out' --error='./slurm_logs/${method}_s${subj}data${dataset}dim${dim_reduction}.err' ../send_sh_job.sh DA_comparison_DL.py perception imagery $subj $region $method $NITER $dataset $dim_reduction
+	sbatch --job-name="s${subj}dr${dim_reduction}${method}" \
+       --out="./slurm_logs/${method}_s${subj}data${dataset}dim${dim_reduction}.out" \
+       --error="./slurm_logs/${method}_s${subj}data${dataset}dim${dim_reduction}.err" \
+       ../send_sh_job.sh DA_comparison_DL.py perception imagery $subj $region $method $NITER $dataset $dim_reduction
 	done	
 done
 
