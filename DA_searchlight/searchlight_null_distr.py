@@ -1,0 +1,216 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+@author: alexolza
+"""
+import os
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
+import re
+import sys
+import glob
+import warnings
+
+sys.path.append('..')
+
+if not sys.warnoptions:
+    warnings.simplefilter("ignore")
+    os.environ["PYTHONWARNINGS"] = "ignore" # Also affect subprocesses
+
+import pandas as pd
+from tqdm import tqdm
+import numpy as np
+from nilearn import plotting
+from nilearn import masking
+from nilearn.image import new_img_like
+import warnings
+from sklearn.metrics import balanced_accuracy_score
+rom sklearn.utils import shuffle
+
+from sklearn.linear_model import LogisticRegression
+from adapt.instance_based import BalancedWeighting
+from adapt.feature_based import PRED
+from adapt.parameter_based import RegularTransferLC as RTLC
+from adapt.parameter_based import RegularTransferLR
+from matplotlib import pyplot as plt
+##
+
+from algorithms.searchlight import get_sphere_data, searchlight_cv_DA, search_light
+from dataManipulation.whole_brain import load_data
+#%%
+source_domain = 'perception'
+target_domain = 'imagery'
+radius = [6, 9, 15, 18, 12][int(eval(sys.argv[4]))]#12
+subjects = sorted([S.split('/')[-1] for S in glob.glob(os.path.join('../data','perception','*'))])
+subject = subjects[ int(eval(sys.argv[1]))]
+
+s = re.sub('[0-9]+_','',subject).capitalize()
+NITER= int(eval(sys.argv[2]))
+savefig_dir = f'../figures/searchlight/{subject}'
+if not os.path.exists(savefig_dir):
+    os.makedirs(savefig_dir)
+out_dir = f'../results/searchlight/{subject}'
+if not os.path.exists(out_dir):
+    os.makedirs(out_dir)
+from adapt.utils import check_arrays
+from sklearn.utils import shuffle
+                     
+from sklearn.preprocessing import LabelBinarizer
+class RTLC(RegularTransferLR):
+	def fit(self, Xt=None, yt=None, **fit_params):       
+		Xt, yt = self._get_target_data(Xt, yt)
+		Xt, yt = check_arrays(Xt, yt)
+		
+		_label_binarizer = LabelBinarizer(pos_label=1, neg_label=-1)
+		_label_binarizer.fit(self.estimator.classes_)
+		yt = _label_binarizer.transform(yt)
+		
+		# print(yt.shape) -> this print is present in the current release of ADAPT, and it is very annoying
+		
+		return super().fit(Xt, yt, **fit_params)
+class BW(BalancedWeighting):
+    def __init__(self,
+                 estimator=None,
+                 Xt=None,
+                 yt=None,
+                 gamma=0.5,
+                 copy=True,
+                 verbose=0, # adapt has default verbosity 1 which i want to avoid
+                 random_state=None,
+                 **params):
+        
+        names = self._get_param_names()
+        kwargs = {k: v for k, v in locals().items() if k in names}
+        kwargs.update(params)
+        super().__init__(**kwargs)
+        
+n_permutations = 100
+
+                
+#%%
+DA = [RTLC, BW, PRED][ int(eval(sys.argv[3]))]
+DA_name = DA.__name__
+print(DA_name)
+#%%
+searchlight = pd.DataFrame()
+from pathlib import Path
+pbase = os.path.join(out_dir,f'map_{NITER}iter_{radius}mm_BASELINE_NULL.csv')
+pnaive = os.path.join(out_dir,f'map_{NITER}iter_{radius}mm_NAIVE_NULL.csv')
+pda = os.path.join(out_dir,f'map_{NITER}iter_{radius}mm_{DA_name}_NULL.csv')
+is_file = {'baseline': Path(pbase).is_file(), 'naive': Path(pnaive).is_file(), 'da': Path(pda).is_file()}
+
+if is_file:
+    print('All results files found, nothing done.')
+else:
+    print(is_file)
+    bold_data, events, masker = load_data(source_domain, subject)
+    tgt_data, tgt_events, tgt_masker = load_data(target_domain, subject)
+    
+    
+    #%%
+    
+    g = events.run+'trial'+events.trial_idx.astype(str)
+    g_tgt = tgt_events.run+'trial'+tgt_events.trial_idx.astype(str)
+    
+    
+    X,A,_,_ = get_sphere_data(masker,bold_data,radius,)
+    X_tgt,A_tgt,_,_ = get_sphere_data(tgt_masker,tgt_data,radius,)
+    null_distributions = np.zeros((n_permutations, X.shape[1])) 
+    
+    Source_train_is,Target_train_is = searchlight_cv_DA(events.target_category.values,tgt_events.target_category.values, g,g_tgt,NITER )
+    
+    
+    try:
+        process_mask, process_mask_affine = masking.load_mask_img(
+            tgt_masker.mask_img
+        )
+    except: 
+        process_mask, process_mask_affine = masking._load_mask_img(
+        tgt_masker.mask_img
+    )
+    for i in tqdm(range(NITER)):
+        is_file = {'baseline': Path(pbase).is_file(), 'naive': Path(pnaive).is_file(), 'da': Path(pda).is_file()}
+        Target_test_is = np.ones(tgt_events.target_category.values.size, dtype=bool)
+        Target_test_is[Target_train_is[i]] = False
+        xtrain = X[Source_train_is[i]]
+        ytrain = events.target_category.values[Source_train_is[i]]
+        xtrain_naive =pd.concat([ pd.DataFrame(xtrain),pd.DataFrame(X[Target_train_is[i]])]).to_numpy()
+        ytrain_naive = pd.concat([pd.Series(events.target_category.values[Source_train_is[i]]),
+                                           pd.Series(events.target_category.values[Target_train_is[i]])]).to_numpy()
+        shuffle(ytrain)
+        shuffle(ytrain_naive)
+        xtest = X_tgt[Target_test_is]
+        ytest = tgt_events.target_category.values[Target_test_is]
+        xtrain_tgt = X_tgt[Target_train_is[i]]
+        ytrain_tgt = tgt_events.target_category.values[Target_train_is[i]]
+        shuffle(ytrain_tgt)
+        if not is_file['baseline']: searchlight[i] = search_light(xtrain, ytrain,LogisticRegression,A,xtest,ytest,scoring = balanced_accuracy_score, verbose=0) 
+        if not is_file['naive']: searchlight_naive[i] = search_light(xtrain_naive, ytrain_naive,LogisticRegression,A,xtest,ytest,scoring = balanced_accuracy_score, verbose=0) 
+        if not is_file['da']: searchlight_DA[i] = search_light(xtrain, ytrain,LogisticRegression,A,xtest,ytest,scoring = balanced_accuracy_score,DA = DA, X_tgt = xtrain_tgt, y_tgt = ytrain_tgt, verbose=0) 
+        if is_file['da']: assert False, f'PROCESS HALTED AFTER ITER {i+1} BECAUSE FILE WAS FOUND: {pda}'
+        
+    if not is_file['baseline']: searchlight.to_csv(pbase,index=False) 
+    
+    if not is_file['naive']: searchlight_naive.to_csv(pnaive,index=False)
+    
+    if not is_file['da']: searchlight_DA.to_csv(pda,index=False)
+    
+    #%%
+    searchlight_mean = searchlight.mean(axis=1)
+    searchlight_DA_mean =  searchlight_DA.mean(axis=1)
+    searchlight_naive_mean = searchlight_naive.mean(axis=1)
+    #%%
+    scores_3D = {}
+    i=0
+
+    for mean in (searchlight_mean,searchlight_DA_mean,searchlight_DA_mean/searchlight_mean, searchlight_mean/searchlight_DA_mean):
+        scores_3D[i] = np.zeros(process_mask.shape)
+        scores_3D[i][process_mask] = mean.values
+        i+=1
+    
+    searchlight_img_0 = new_img_like(tgt_masker.mask_img, scores_3D[0])
+    searchlight_img_1 = new_img_like(tgt_masker.mask_img, scores_3D[1])
+    searchlight_img_2 = new_img_like(tgt_masker.mask_img, scores_3D[2])
+    searchlight_img_3 = new_img_like(tgt_masker.mask_img, scores_3D[3])
+    
+    # save nifti images
+    
+    if not is_file['baseline']: searchlight_img_0.to_filename(os.path.join(out_dir,f'map_{NITER}iter_{radius}mm_BASELINE_NULL.nii.gz'))
+    searchlight_img_1.to_filename(os.path.join(out_dir,f'map_{NITER}iter_{radius}mm_{DA_name}_NULL.nii.gz'))
+    searchlight_img_2.to_filename(os.path.join(out_dir,f'map_{NITER}iter_{radius}mm_{DA_name}BASE_NULL.nii.gz'))
+    searchlight_img_3.to_filename(os.path.join(out_dir,f'map_{NITER}iter_{radius}mm_BASE{DA_name}_NULL.nii.gz'))
+    
+    #%%
+    fig, ax = plt.subplots(4,1,figsize=(12,16))
+    
+    plotting.plot_stat_map(searchlight_img_0,bg_img = masker.mask_img,cut_coords=(0,-5,-4),threshold=0.5, title = f'Baseline > 0.5- {s}',axes =ax[0])
+    plotting.plot_stat_map(searchlight_img_1,bg_img = masker.mask_img,cut_coords=(0,-5,-4),threshold=0.5, title = f'{DA_name}  > 0.5- {s}',axes =ax[1])
+    plotting.plot_stat_map(searchlight_img_2,bg_img = masker.mask_img,cut_coords=(0,-5,-4),threshold=1, title = f'{DA_name}/Baseline > 1 - {s}',axes =ax[2])
+    plotting.plot_stat_map(searchlight_img_3,bg_img = masker.mask_img,cut_coords=(0,-5,-4),threshold=1, title = f'Baseline/{DA_name} > 1 - {s}',axes =ax[3])
+    fig.savefig(os.path.join(savefig_dir,f'fig_{NITER}iter_{radius}mm{DA_name}_NULL.png'))
+    
+    #%%
+    
+    scores_3D = {}
+    i=0
+    for mean in (searchlight_naive_mean,searchlight_DA_mean,searchlight_DA_mean/searchlight_naive_mean, searchlight_naive_mean/searchlight_DA_mean):
+        scores_3D[i] = np.zeros(process_mask.shape)
+        scores_3D[i][process_mask] = mean
+        i+=1
+    
+    searchlight_img_0 = new_img_like(tgt_masker.mask_img, scores_3D[0])
+    searchlight_img_1 = new_img_like(tgt_masker.mask_img, scores_3D[1])
+    searchlight_img_2 = new_img_like(tgt_masker.mask_img, scores_3D[2])
+    searchlight_img_3 = new_img_like(tgt_masker.mask_img, scores_3D[3])
+    # save nifti images
+    
+    searchlight_img_0.to_filename(os.path.join(out_dir,f'map_{NITER}iter_{radius}mm_NAIVE{DA_name}_NULL.nii.gz'))
+    
+    #%%
+    fig, ax = plt.subplots(4,1,figsize=(12,16))
+    
+    plotting.plot_stat_map(searchlight_img_0,bg_img = masker.mask_img,cut_coords=(0,-5,-4),threshold=0.5, title = f'Naive > 0.5- {s}',axes =ax[0])
+    plotting.plot_stat_map(searchlight_img_1,bg_img = masker.mask_img,cut_coords=(0,-5,-4),threshold=0.5, title = f'{DA_name}  > 0.5- {s}',axes =ax[1])
+    plotting.plot_stat_map(searchlight_img_2,bg_img = masker.mask_img,cut_coords=(0,-5,-4),threshold=1, title = f'{DA_name}/Naive > 1 - {s}',axes =ax[2])
+    plotting.plot_stat_map(searchlight_img_3,bg_img = masker.mask_img,cut_coords=(0,-5,-4),threshold=1, title = f'Naive/{DA_name} > 1 - {s}',axes =ax[3])
+    fig.savefig(os.path.join(savefig_dir,f'fig_naive_{NITER}iter_{radius}mm{DA_name}_NULL.png'))
+
