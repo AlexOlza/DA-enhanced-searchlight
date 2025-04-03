@@ -147,70 +147,9 @@ else:
         #f not is_file['naive']: searchlight_naive[i] = search_light(xtrain_naive, ytrain_naive,LogisticRegression,A,xtest,ytest,scoring = balanced_accuracy_score, verbose=0) 
         #if not is_file['da']: searchlight_DA[i] = search_light(xtrain, ytrain,LogisticRegression,A,xtest,ytest,scoring = balanced_accuracy_score,DA = DA, X_tgt = xtrain_tgt, y_tgt = ytrain_tgt, verbose=0) 
         if is_file['baseline']: assert False, f'PROCESS HALTED AFTER ITER {i+1} BECAUSE FILE WAS FOUND: {pbase}'
+  
+    
+  
+        searchlight.to_csv(pbase,index=False) 
         
-    #if not is_file['baseline']: searchlight.to_csv(pbase,index=False) 
-    
-    #if not is_file['naive']: searchlight_naive.to_csv(pnaive,index=False)
-    
-    #if not is_file['da']: searchlight_DA.to_csv(pda,index=False)
-    """"
-    #%%
-    searchlight_mean = searchlight.mean(axis=1)
-    #ssearchlight_DA_mean =  searchlight_DA.mean(axis=1)
-    #searchlight_naive_mean = searchlight_naive.mean(axis=1)
-    #%%
-    scores_3D = {}
-    i=0
-
-    #for mean in (searchlight_mean,searchlight_DA_mean,searchlight_DA_mean/searchlight_mean, searchlight_mean/searchlight_DA_mean):
-        	scores_3D[i] = np.zeros(process_mask.shape)
-        scores_3D[i][process_mask] = mean.value
-    
-    searchlight_img_0 = new_img_like(tgt_masker.mask_img, scores_3D[0])
-    searchlight_img_1 = new_img_like(tgt_masker.mask_img, scores_3D[1])
-    searchlightº
-    _img_2 = new_img_like(tgt_masker.mask_img, scores_3D[2])
-    searchlight_img_3 = new_img_like(tgt_masker.mask_img, scores_3D[3])
-    
-    # save nifti images
-    
-    if not is_file['baseline']: searchlight_img_0.to_filename(os.path.join(out_dir,f'map_{NITER}iter_{radius}mm_BASELINE_NULL.nii.gz'))
-    searchlight_img_1.to_filename(os.path.join(out_dir,f'map_{NITER}iter_{radius}mm_{DA_name}_NULL.nii.gz'))
-    searchlight_img_2.to_filename(os.path.join(out_dir,f'map_{NITER}iter_{radius}mm_{DA_name}BASE_NULL.nii.gz'))
-    searchlight_img_3.to_filename(os.path.join(out_dir,f'map_{NITER}iter_{radius}mm_BASE{DA_name}_NULL.nii.gz'))
-    
-    #%%
-    fig, ax = plt.subplots(4,1,figsize=(12,16))
-    
-    plotting.plot_stat_map(searchlight_img_0,bg_img = masker.mask_img,cut_coords=(0,-5,-4),threshold=0.5, title = f'Baseline > 0.5- {s}',axes =ax[0])
-    plotting.plot_stat_map(searchlight_img_1,bg_img = masker.mask_img,cut_coords=(0,-5,-4),threshold=0.5, title = f'{DA_name}  > 0.5- {s}',axes =ax[1])
-    plotting.plot_stat_map(searchlight_img_2,bg_img = masker.mask_img,cut_coords=(0,-5,-4),threshold=1, title = f'{DA_name}/Baseline > 1 - {s}',axes =ax[2])
-    plotting.plot_stat_map(searchlight_img_3,bg_img = masker.mask_img,cut_coords=(0,-5,-4),threshold=1, title = f'Baseline/{DA_name} > 1 - {s}',axes =ax[3])
-    fig.savefig(os.path.join(savefig_dir,f'fig_{NITER}iter_{radius}mm{DA_name}_NULL.png'))
-    
-    #%%
-    
-    scores_3D = {}
-    i=0
-    for mean in (searchlight_naive_mean,searchlight_DA_mean,searchlight_DA_mean/searchlight_naive_mean, searchlight_naive_mean/searchlight_DA_mean):
-        scores_3D[i] = np.zeros(process_mask.shape)
-        scores_3D[i][process_mask] = mean
-        i+=1
-    
-    searchlight_img_0 = new_img_like(tgt_masker.mask_img, scores_3D[0])
-    searchlight_img_1 = new_img_like(tgt_masker.mask_img, scores_3D[1])
-    searchlight_img_2 = new_img_like(tgt_masker.mask_img, scores_3D[2])
-    searchlight_img_3 = new_img_like(tgt_masker.mask_img, scores_3D[3])
-    # save nifti images
-    
-    searchlight_img_0.to_filename(os.path.join(out_dir,f'map_{NITER}iter_{radius}mm_NAIVE{DA_name}_NULL.nii.gz'))
-    
-    #%%
-    fig, ax = plt.subplots(4,1,figsize=(12,16))
-    
-    plotting.plot_stat_map(searchlight_img_0,bg_img = masker.mask_img,cut_coords=(0,-5,-4),threshold=0.5, title = f'Naive > 0.5- {s}',axes =ax[0])
-    plotting.plot_stat_map(searchlight_img_1,bg_img = masker.mask_img,cut_coords=(0,-5,-4),threshold=0.5, title = f'{DA_name}  > 0.5- {s}',axes =ax[1])
-    plotting.plot_stat_map(searchlight_img_2,bg_img = masker.mask_img,cut_coords=(0,-5,-4),threshold=1, title = f'{DA_name}/Naive > 1 - {s}',axes =ax[2])
-    plotting.plot_stat_map(searchlight_img_3,bg_img = masker.mask_img,cut_coords=(0,-5,-4),threshold=1, title = f'Naive/{DA_name} > 1 - {s}',axes =ax[3])
-    fig.savefig(os.path.join(savefig_dir,f'fig_naive_{NITER}iter_{radius}mm{DA_name}_NULL.png'))
-
+        print('finised!')
