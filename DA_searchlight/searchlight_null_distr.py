@@ -145,14 +145,14 @@ else:
         y_train_tgt = shuffle(ytrain_tgt)
         if not is_file['baseline']: searchlight[i] = search_light(xtrain, ytrain,LogisticRegression,A,xtest,ytest,scoring = balanced_accuracy_score, verbose=0) 
         if not is_file['naive']: searchlight_naive[i] = search_light(xtrain_naive, ytrain_naive,LogisticRegression,A,xtest,ytest,scoring = balanced_accuracy_score, verbose=0) 
-        if not is_file['da']: searchlight_DA[i] = search_light(xtrain, ytrain,LogisticRegression,A,xtest,ytest,scoring = balanced_accuracy_score,DA = DA, X_tgt = xtrain_tgt, y_tgt = ytrain_tgt, verbose=0) 
-        if is_file['da']: assert False, f'PROCESS HALTED AFTER ITER {i+1} BECAUSE FILE WAS FOUND: {pda}'
+        #if not is_file['da']: searchlight_DA[i] = search_light(xtrain, ytrain,LogisticRegression,A,xtest,ytest,scoring = balanced_accuracy_score,DA = DA, X_tgt = xtrain_tgt, y_tgt = ytrain_tgt, verbose=0) 
+        if is_file['baseline']: assert False, f'PROCESS HALTED AFTER ITER {i+1} BECAUSE FILE WAS FOUND: {pbase}'
         
     if not is_file['baseline']: searchlight.to_csv(pbase,index=False) 
     
     if not is_file['naive']: searchlight_naive.to_csv(pnaive,index=False)
     
-    if not is_file['da']: searchlight_DA.to_csv(pda,index=False)
+    #if not is_file['da']: searchlight_DA.to_csv(pda,index=False)
     
     #%%
     searchlight_mean = searchlight.mean(axis=1)
