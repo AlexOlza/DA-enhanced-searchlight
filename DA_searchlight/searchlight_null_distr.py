@@ -24,7 +24,7 @@ from nilearn import masking
 from nilearn.image import new_img_like
 import warnings
 from sklearn.metrics import balanced_accuracy_score
-rom sklearn.utils import shuffle
+from sklearn.utils import shuffle
 
 from sklearn.linear_model import LogisticRegression
 from adapt.instance_based import BalancedWeighting
@@ -136,13 +136,13 @@ else:
         xtrain_naive =pd.concat([ pd.DataFrame(xtrain),pd.DataFrame(X[Target_train_is[i]])]).to_numpy()
         ytrain_naive = pd.concat([pd.Series(events.target_category.values[Source_train_is[i]]),
                                            pd.Series(events.target_category.values[Target_train_is[i]])]).to_numpy()
-        shuffle(ytrain)
-        shuffle(ytrain_naive)
+        ytrain=shuffle(ytrain)
+        ytrain_naive=shuffle(ytrain_naive)
         xtest = X_tgt[Target_test_is]
         ytest = tgt_events.target_category.values[Target_test_is]
         xtrain_tgt = X_tgt[Target_train_is[i]]
         ytrain_tgt = tgt_events.target_category.values[Target_train_is[i]]
-        shuffle(ytrain_tgt)
+        y_train_tgt = shuffle(ytrain_tgt)
         if not is_file['baseline']: searchlight[i] = search_light(xtrain, ytrain,LogisticRegression,A,xtest,ytest,scoring = balanced_accuracy_score, verbose=0) 
         if not is_file['naive']: searchlight_naive[i] = search_light(xtrain_naive, ytrain_naive,LogisticRegression,A,xtest,ytest,scoring = balanced_accuracy_score, verbose=0) 
         if not is_file['da']: searchlight_DA[i] = search_light(xtrain, ytrain,LogisticRegression,A,xtest,ytest,scoring = balanced_accuracy_score,DA = DA, X_tgt = xtrain_tgt, y_tgt = ytrain_tgt, verbose=0) 
