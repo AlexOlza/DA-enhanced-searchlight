@@ -98,7 +98,7 @@ pnaive = os.path.join(out_dir,f'map_{NITER}iter_{radius}mm_NAIVE_NULL.csv')
 pda = os.path.join(out_dir,f'map_{NITER}iter_{radius}mm_{DA_name}_NULL.csv')
 is_file = {'baseline': Path(pbase).is_file(), 'naive': Path(pnaive).is_file(), 'da': Path(pda).is_file()}
 
-if is_file:
+if all(is_file.values()):
     print('All results files found, nothing done.')
 else:
     print(is_file)
@@ -144,32 +144,32 @@ else:
         ytrain_tgt = tgt_events.target_category.values[Target_train_is[i]]
         y_train_tgt = shuffle(ytrain_tgt)
         if not is_file['baseline']: searchlight[i] = search_light(xtrain, ytrain,LogisticRegression,A,xtest,ytest,scoring = balanced_accuracy_score, verbose=0) 
-        if not is_file['naive']: searchlight_naive[i] = search_light(xtrain_naive, ytrain_naive,LogisticRegression,A,xtest,ytest,scoring = balanced_accuracy_score, verbose=0) 
+        #f not is_file['naive']: searchlight_naive[i] = search_light(xtrain_naive, ytrain_naive,LogisticRegression,A,xtest,ytest,scoring = balanced_accuracy_score, verbose=0) 
         #if not is_file['da']: searchlight_DA[i] = search_light(xtrain, ytrain,LogisticRegression,A,xtest,ytest,scoring = balanced_accuracy_score,DA = DA, X_tgt = xtrain_tgt, y_tgt = ytrain_tgt, verbose=0) 
         if is_file['baseline']: assert False, f'PROCESS HALTED AFTER ITER {i+1} BECAUSE FILE WAS FOUND: {pbase}'
         
-    if not is_file['baseline']: searchlight.to_csv(pbase,index=False) 
+    #if not is_file['baseline']: searchlight.to_csv(pbase,index=False) 
     
-    if not is_file['naive']: searchlight_naive.to_csv(pnaive,index=False)
+    #if not is_file['naive']: searchlight_naive.to_csv(pnaive,index=False)
     
     #if not is_file['da']: searchlight_DA.to_csv(pda,index=False)
-    
+    """"
     #%%
     searchlight_mean = searchlight.mean(axis=1)
-    searchlight_DA_mean =  searchlight_DA.mean(axis=1)
-    searchlight_naive_mean = searchlight_naive.mean(axis=1)
+    #ssearchlight_DA_mean =  searchlight_DA.mean(axis=1)
+    #searchlight_naive_mean = searchlight_naive.mean(axis=1)
     #%%
     scores_3D = {}
     i=0
 
-    for mean in (searchlight_mean,searchlight_DA_mean,searchlight_DA_mean/searchlight_mean, searchlight_mean/searchlight_DA_mean):
-        scores_3D[i] = np.zeros(process_mask.shape)
-        scores_3D[i][process_mask] = mean.values
-        i+=1
+    #for mean in (searchlight_mean,searchlight_DA_mean,searchlight_DA_mean/searchlight_mean, searchlight_mean/searchlight_DA_mean):
+        	scores_3D[i] = np.zeros(process_mask.shape)
+        scores_3D[i][process_mask] = mean.value
     
     searchlight_img_0 = new_img_like(tgt_masker.mask_img, scores_3D[0])
     searchlight_img_1 = new_img_like(tgt_masker.mask_img, scores_3D[1])
-    searchlight_img_2 = new_img_like(tgt_masker.mask_img, scores_3D[2])
+    searchlightº
+    _img_2 = new_img_like(tgt_masker.mask_img, scores_3D[2])
     searchlight_img_3 = new_img_like(tgt_masker.mask_img, scores_3D[3])
     
     # save nifti images
