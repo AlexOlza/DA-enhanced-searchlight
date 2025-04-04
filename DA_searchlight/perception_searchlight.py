@@ -29,15 +29,17 @@ from sklearn.metrics import balanced_accuracy_score
 from algorithms.searchlight import get_sphere_data, searchlight_cv_DA, search_light
 from dataManipulation.whole_brain import load_data
 from pathlib import Path
+from sklearn.utils import shuffle
 #%%
 source_domain = 'perception'
 target_domain = 'perception'
-radius = [6, 9, 15, 18, 12][int(eval(sys.argv[-1]))]#12
+radius = [6, 9, 15, 18, 12][int(eval(sys.argv[3]))]#12
 subjects = sorted([int(S.split('/')[-1]) for S in glob.glob(os.path.join('../data','perception','*'))])
 subjects = np.array(subjects).astype(str)
 subject = subjects[ int(eval(sys.argv[1]))]
 s = re.sub('[0-9]+_','',subject).capitalize()
 NITER= int(eval(sys.argv[2]))
+NULL= int(eval(sys.argv[4]))
 savefig_dir = f'../figures/searchlight/{subject}'
 if not os.path.exists(savefig_dir):
     os.makedirs(savefig_dir)
@@ -49,7 +51,10 @@ if not os.path.exists(out_dir):
 #%%
 searchlight= pd.DataFrame()
 
-pbase = os.path.join(out_dir,f'map_{NITER}iter_{radius}mm_PERCEPTION.csv')
+if NULL==0:
+	pbase = os.path.join(out_dir,f'map_{NITER}iter_{radius}mm_PERCEPTION.csv')
+else:
+	pbase = os.path.join(out_dir,f'map_{NITER}iter_{radius}mm_PERCEPTION_NULL.csv')
 
 if not Path(pbase).is_file():
     bold_data, events, masker = load_data(source_domain, subject)
@@ -74,6 +79,9 @@ if not Path(pbase).is_file():
         
         xtest = np.delete(X,Source_train_is[i],axis=0)
         ytest = np.delete(events.target_category.values,Source_train_is[i],axis=0)
+        
+        if NULL!=0: ytrain = shuffle(ytrain)
+        
         searchlight[i] = search_light(xtrain, ytrain,LogisticRegression,A,xtest,ytest,scoring = balanced_accuracy_score, verbose=0) 
         
     searchlight.to_csv(pbase,index=False) 
