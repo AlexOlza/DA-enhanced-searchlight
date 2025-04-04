@@ -32,8 +32,8 @@ from pathlib import Path
 #%%
 source_domain = 'perception'
 target_domain = 'perception'
-radius = [6, 9, 15, 18][int(eval(sys.argv[-1]))]#12
-subjects = sorted([S.split('/')[-1] for S in glob.glob(os.path.join('../data','perception','*'))])
+radius = [6, 9, 15, 18, 12][int(eval(sys.argv[-1]))]#12
+subjects = sorted([int(S.split('/')[-1]) for S in glob.glob(os.path.join('../data','perception','*'))])
 subject = subjects[ int(eval(sys.argv[1]))]
 s = re.sub('[0-9]+_','',subject).capitalize()
 NITER= int(eval(sys.argv[2]))
