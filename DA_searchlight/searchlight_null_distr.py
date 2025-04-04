@@ -41,6 +41,7 @@ source_domain = 'perception'
 target_domain = 'imagery'
 radius = [6, 9, 15, 18, 12][int(eval(sys.argv[4]))]#12
 subjects = sorted([int(S.split('/')[-1]) for S in glob.glob(os.path.join('../data','perception','*'))])
+subjects = np.array(subjects).astype(str)
 subject = subjects[ int(eval(sys.argv[1]))]
 
 s = re.sub('[0-9]+_','',subject).capitalize()
