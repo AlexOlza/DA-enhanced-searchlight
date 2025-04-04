@@ -38,21 +38,7 @@ from matplotlib import pyplot as plt
 from algorithms.searchlight import get_sphere_data, searchlight_cv_DA, search_light
 from dataManipulation.whole_brain import load_data
 #%%
-source_domain = 'perception'
-target_domain = 'imagery'
-radius = [6, 9, 15, 18, 12][int(eval(sys.argv[4]))]#12
-subjects = sorted([int(S.split('/')[-1]) for S in glob.glob(os.path.join('../data','perception','*'))])
-subjects = np.array(subjects).astype(str)
-subject = subjects[ int(eval(sys.argv[1]))]
 
-s = re.sub('[0-9]+_','',subject).capitalize()
-NITER= int(eval(sys.argv[2]))
-savefig_dir = f'../figures/searchlight/{subject}'
-if not os.path.exists(savefig_dir):
-    os.makedirs(savefig_dir)
-out_dir = f'../results/searchlight/{subject}'
-if not os.path.exists(out_dir):
-    os.makedirs(out_dir)
 from adapt.utils import check_arrays
                          
 from sklearn.preprocessing import LabelBinarizer
@@ -85,9 +71,29 @@ class BW(BalancedWeighting):
         super().__init__(**kwargs)
         
 
+
+source_domain = 'perception'
+target_domain = 'imagery'
+
+subjects = sorted([int(S.split('/')[-1]) for S in glob.glob(os.path.join('../data','perception','*'))])
+subjects = np.array(subjects).astype(str)
+subject = subjects[ int(eval(sys.argv[1]))]
+NITER= int(eval(sys.argv[2]))
+DA = [RTLC, BW, PRED][ int(eval(sys.argv[3]))]
+radius = [6, 9, 15, 18, 12][int(eval(sys.argv[4]))]#12
+NULL= int(eval(sys.argv[5])) # not used, compatibility
+s = re.sub('[0-9]+_','',subject).capitalize()
+
+savefig_dir = f'../figures/searchlight/{subject}'
+if not os.path.exists(savefig_dir):
+    os.makedirs(savefig_dir)
+out_dir = f'../results/searchlight/{subject}'
+if not os.path.exists(out_dir):
+    os.makedirs(out_dir)
+
                 
 #%%
-DA = [RTLC, BW, PRED][ int(eval(sys.argv[3]))]
+
 DA_name = DA.__name__
 print(DA_name)
 #%%
