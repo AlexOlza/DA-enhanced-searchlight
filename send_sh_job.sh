@@ -36,10 +36,24 @@
 # If you are using arrays, specify the number of tasks in the array
 ##SBATCH --array=1-XX
 
+echo "Job ID: $SLURM_JOB_ID"
+
+# Print start time
+start_time=$(date)
+echo "Start time: $start_time"
+
 #Ejemplo: En el caso de lanzar algo con python hay que incluir priscilla exec.
 #         En el caso de binarios es necesario. 
   
-echo   "priscilla exec python3 $1 $2 $3 $4 $5 $6 $7 $8"      
-        priscilla exec python3 $1 $2 $3 $4 $5 $6 $7 $8
+echo   "priscilla exec python3 $1 $2 $3 $4 $5 $6 $7 $8 $9 $10"      
+        priscilla exec python3 $1 $2 $3 $4 $5 $6 $7 $8 $9 $10
 
 # Example: sbatch raw.sh raw.py imaginacion_fusiform 0
+
+# Capture end time after Python execution
+end_time=$(date)
+echo "End time: $end_time"
+
+# Calculate elapsed time
+elapsed_time=$((end_time - start_time))
+echo "Elapsed time: $elapsed_time seconds"
