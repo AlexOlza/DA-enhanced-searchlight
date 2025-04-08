@@ -222,7 +222,7 @@ class DomainAdaptationGOD:
     
 #%%
 def reduce_dim(train, I_train, test, I_test, n_components, method):
-    assert method in range(1,3)
+    assert method in range(1,4)
     reducer = [TruncatedSVD(n_components), SparseRandomProjection(n_components), FastICA(n_components)][method-1]
     pipe = Pipeline([('scaler', StandardScaler()), ('reducer', reducer)])
     pipe_tgt = Pipeline([('scaler', StandardScaler()), ('reducer', reducer)])
