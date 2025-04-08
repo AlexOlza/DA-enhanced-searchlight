@@ -76,8 +76,8 @@ else:
     
 subject = subjects[ int(eval(sys.argv[3]))]
 
-NITER_ = int(eval(sys.argv[5]))
-concat_tgt=int(eval(sys.argv[6]))
+NITER_ = int(eval(sys.argv[6]))
+concat_tgt=int(eval(sys.argv[4]))
 concat_tgt_marker='' if concat_tgt==0 else '_withtgt'
 splitting='StratifiedGroupKFold'
 n_folds = 5
@@ -85,7 +85,7 @@ living=False
 if dataset =='own':
     outdir = os.path.join('../results/DA_comparison', region_name, f'{source_domain}_{target_domain}', subject)
 else:
-    outdir = os.path.join(f'../results/DA_comparison/{dataset}_allpresent_oversampled', region_name, f'{source_domain}_{target_domain}', subject)
+    outdir = os.path.join(f'../results/DA_comparison/{dataset}_resnet{N_classes}', region_name, f'{source_domain}_{target_domain}', subject)
 if not os.path.exists(outdir):
     os.makedirs(outdir)
 
