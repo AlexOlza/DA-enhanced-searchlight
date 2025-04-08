@@ -13,6 +13,12 @@ else
 	region=VC
 fi
 
+if [ "$REDUCE_DIM" -eq "0" ]; then
+	cpus=16
+else
+	cpus=8
+fi
+
 total_jobs=0
 
 declare -a methods=("DeepCORAL" "DANN" "MCD" "FineTuning")
@@ -26,7 +32,7 @@ do
 	sbatch --job-name="n${N_classes}${method}" \
        --out="./slurm_logs/${method}_s${subj}data${dataset}n${N_classes}dim${dim_reduction}.out" \
        --error="./slurm_logs/${method}_s${subj}data${dataset}n${N_classes}dim${dim_reduction}.err" \
-       --cpus-per-task=16 \
+       --cpus-per-task=$cpus \
        ../send_sh_job.sh DA_comparison_DL.py perception imagery $subj $method $region $NITER $dataset $N_classes $REDUCE_DIM
        total_jobs=$(($total_jobs + 1))
 	done	
