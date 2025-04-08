@@ -94,7 +94,9 @@ if not os.path.exists(outdir):
 fname = os.path.join(outdir, f'baseline{concat_tgt_marker}.csv')
 params = {} if dataset=='own' else { 'n_jobs':-1,'class_weight':'balanced'}
 print(f'Fitting baseline {concat_tgt_marker} for subject {subject} in region {region_name} using dataset {dataset}...')
-# print(allregions)
+
+remove_noise=True
+
 if not False:#Path(fname).is_file():
     
     t0=time()      
