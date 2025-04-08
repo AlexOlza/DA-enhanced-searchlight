@@ -55,22 +55,23 @@ from dataManipulation.loadData import MyFullDataset
 source_domain =  sys.argv[1]
 target_domain =  sys.argv[2]
 dataset = int(eval(sys.argv[7]))
+N_classes = int(eval(sys.argv[8]))
 shuffle = False
 average=False
 binary=False
-oversample=True
+oversample=False
 if dataset==0:
     dataset='own'
     subjects = sorted([S.split('/')[-1] for S in glob.glob(os.path.join('../data','perception','*'))])
     allregions=sorted([R.split('/')[-1].split('.')[0] for R in glob.glob(os.path.join(f'../data/perception/{subjects[0]}','*.npy'))])
-    idx = [int(r) for r in sys.argv[4].split('+')]
-    region = allregions if int(eval(sys.argv[4]))==-1 else [allregions[i] for i in idx]
+    idx = [int(r) for r in sys.argv[5].split('+')]
+    region = allregions if int(eval(sys.argv[5]))==-1 else [allregions[i] for i in idx]
     
-    region_name='all_regions' if int(eval(sys.argv[4]))==-1 else '-'.join(region)
+    region_name='all_regions' if int(eval(sys.argv[5]))==-1 else '-'.join(region)
 else:
     dataset ='ds001246'
-    subjects = sorted([S.split('/')[-1].split('.')[0] for S in glob.glob(os.path.join(f'../{dataset}','*'))])
-    region = sys.argv[4]
+    subjects = sorted([S.split('/')[-1].split('.')[0] for S in glob.glob(os.path.join(f'../{dataset}','Subject*'))])
+    region = sys.argv[5]
     region_name = region
     
 subject = subjects[ int(eval(sys.argv[3]))]
@@ -105,13 +106,16 @@ if not False:#Path(fname).is_file():
 
     # The dataset used for the paper contained additional samples collected while the subject was
     # presented with gaussian noise images. We have not used them in our experiments, hence the variable remove_noise.
-    remove_noise=True 
-    # We read the complete datasets.
-    Source_X, Source_y, Source_g = MyFullDataset(source_domain, subject, region, remove_noise=remove_noise, dataset = dataset,average=average)[:] # Returns: voxels, labels, groups (run + trial)
-    Target_X, Target_y, Target_g = MyFullDataset(target_domain, subject, region, remove_noise=remove_noise, dataset = dataset,average=average)[:]
-    
-    Source_X, Source_y, Source_g = Source_X[Source_y!=9], Source_y[Source_y!=9], Source_g[Source_y!=9]
-    Target_X, Target_y, Target_g = Target_X[Target_y!=9], Target_y[Target_y!=9], Target_g[Target_y!=9]
+    Source_X, Source_y, Source_g = MyFullDataset(source_domain, subject, region, 
+                                                 remove_noise=remove_noise,
+                                                 dataset=dataset,
+                                                 N_classes=N_classes
+                                                 )[:]
+    Target_X, Target_y, Target_g = MyFullDataset(target_domain, subject, region, 
+                                                 remove_noise=remove_noise,
+                                                 dataset=dataset,
+                                                 N_classes=N_classes
+                                                 )[:]
     
     print('N voxels: ', Source_X.shape[-1])
     

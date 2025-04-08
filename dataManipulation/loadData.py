@@ -27,6 +27,7 @@ DATAPATH = '../data'
 DATAPATH_ds001246 = '../ds001246'
 class MyFullDataset(): # Loads the whole dataset for a domain, subject and region
     def __init__(self, domain, subject, regions, remove_noise=True, dataset='own',average=False, semantic_groups = True, **kwargs):
+        self.N_classes = kwargs.get('N_classes', 2)
         if dataset == 'own':    
             data_dir = kwargs.get('data_dir',DATAPATH)
             self.data_dir=data_dir
@@ -106,8 +107,12 @@ class MyFullDataset(): # Loads the whole dataset for a domain, subject and regio
                 self.labels= categories[idx].ravel()
             self.trials = runs[idx].ravel()
             
-    def __group_categories__(self,categories):    
+    def __group_categories__deprecated(self,categories):    
         category_meanings = pd.read_csv(f'{self.data_dir}/category_meaning.csv')
+        merged = pd.merge(category_meanings,pd.DataFrame(categories,columns=['category_id']),on='category_id')
+        return(merged.semantic_group_id.values,merged.category_id.values,merged.semantic_group.values, merged.category.values)
+    def __group_categories__(self,categories):    
+        category_meanings = pd.read_csv(f'{self.data_dir}/resnet50_based_categories_{self.N_classes}classes_avg.csv')
         merged = pd.merge(category_meanings,pd.DataFrame(categories,columns=['category_id']),on='category_id')
         return(merged.semantic_group_id.values,merged.category_id.values,merged.semantic_group.values, merged.category.values)
     def __getitem__(self, index):

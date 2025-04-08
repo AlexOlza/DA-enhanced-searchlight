@@ -74,6 +74,7 @@ def launch_priscilla_baseline():
 source_domain =  sys.argv[1]
 target_domain =  sys.argv[2]
 dataset = int(eval(sys.argv[7]))
+N_classes = int(eval(sys.argv[8]))
 shuffle = False
 average=False
 binary=False
@@ -82,16 +83,16 @@ if dataset==0:
     dataset='own'
     subjects = sorted([S.split('/')[-1] for S in glob.glob(os.path.join('../data','perception','*'))])
     allregions=sorted([R.split('/')[-1].split('.')[0] for R in glob.glob(os.path.join(f'../data/perception/{subjects[0]}','*.npy'))])
-    idx = [int(r) for r in sys.argv[4].split('+')]
-    region = allregions if int(eval(sys.argv[4]))==-1 else [allregions[i] for i in idx]
+    idx = [int(r) for r in sys.argv[5].split('+')]
+    region = allregions if int(eval(sys.argv[5]))==-1 else [allregions[i] for i in idx]
     
-    region_name='all_regions' if int(eval(sys.argv[4]))==-1 else '-'.join(region)
+    region_name='all_regions' if int(eval(sys.argv[5]))==-1 else '-'.join(region)
 else:
     dataset ='ds001246'
-    subjects = sorted([S.split('/')[-1].split('.')[0] for S in glob.glob(os.path.join(f'../{dataset}','*'))])
+    subjects = sorted([S.split('/')[-1].split('.')[0] for S in glob.glob(os.path.join(f'../{dataset}','Subject*'))])
     region = sys.argv[5]
     region_name = region
-subject = subjects[ int(eval(sys.argv[3]))]
+
 
 methods = [PRED, FA, SA,
            KMM, ULSIF, RULSIF, NearestNeighborsWeighting, IWN, BalancedWeighting, TrAdaBoost, RegularTransferLC]
@@ -114,7 +115,7 @@ fulldf=pd.DataFrame()
 if dataset =='own':
     outdir = os.path.join('../results/DA_comparison', region_name, f'{source_domain}_{target_domain}', subject)
 else:
-    outdir = os.path.join(f'../results/DA_comparison/{dataset}_allpresent_oversampled', region_name, f'{source_domain}_{target_domain}', subject)
+    outdir = os.path.join(f'../results/DA_comparison/{dataset}_resnet{N_classes}', region_name, f'{source_domain}_{target_domain}', subject)
 if not os.path.exists(outdir):
 	os.makedirs(outdir)
 """ MAIN PROGRAM """
@@ -127,22 +128,29 @@ estimator = LogisticRegression(**params_base)
 results={}
 t0=time()
 
-assert method in method_names, f'Unrecognized DA method {method}. Available methods: {method_names}. \n Usage: python DA_comparison.py source_domain:str target_domain:str subject:int method:str region:int(-1 to use all regions) NITER:int'
+# assert method in method_names, f'Unrecognized DA method {method}. Available methods: {method_names}. \n Usage: python DA_comparison.py source_domain:str target_domain:str subject:int method:str region:int(-1 to use all regions) NITER:int'
 
 DA_method =  methods[method]
 params = parameters[method]
-
 
 print(f'Fitting {method} for subject {subject} in region {region_name} using dataset {dataset}...')
 Nts=range(10,110, 10) if dataset=='own' else [200, 250, 300]
 
 if not Path(os.path.join(outdir, f'DA_{method}.csv')).is_file():
     remove_noise=True
-    Source_X, Source_y, Source_g = MyFullDataset(source_domain, subject, region, remove_noise=remove_noise,dataset=dataset)[:]
-    Target_X, Target_y, Target_g = MyFullDataset(target_domain, subject, region, remove_noise=remove_noise,dataset=dataset)[:]
+    Source_X, Source_y, Source_g = MyFullDataset(source_domain, subject, region, 
+                                                 remove_noise=remove_noise,
+                                                 dataset=dataset,
+                                                 N_classes=N_classes
+                                                 )[:]
+    Target_X, Target_y, Target_g = MyFullDataset(target_domain, subject, region, 
+                                                 remove_noise=remove_noise,
+                                                 dataset=dataset,
+                                                 N_classes=N_classes
+                                                 )[:]
     
-    Source_X, Source_y, Source_g = Source_X[Source_y!=9], Source_y[Source_y!=9], Source_g[Source_y!=9]
-    Target_X, Target_y, Target_g = Target_X[Target_y!=9], Target_y[Target_y!=9], Target_g[Target_y!=9]
+    # Source_X, Source_y, Source_g = Source_X[Source_y!=9], Source_y[Source_y!=9], Source_g[Source_y!=9]
+    # Target_X, Target_y, Target_g = Target_X[Target_y!=9], Target_y[Target_y!=9], Target_g[Target_y!=9]
     
     balanced_accuracy, balanced_accuracy_im, balanced_accuracy_imtr=pd.DataFrame(),pd.DataFrame(),pd.DataFrame()
     for Nt in tqdm(Nts):
@@ -157,7 +165,7 @@ if not Path(os.path.join(outdir, f'DA_{method}.csv')).is_file():
         NITER =len(d.Target_train_y)
         prediction_matrix =-1 *np.ones((len(Target_y),NITER))
      
-        for i in range(NITER):
+        for i in tqdm(range(NITER)):
             
             train = d.Source_train_X[i]
             test = d.Source_test_X[i]
