@@ -79,38 +79,39 @@ class Task_model(SequentialModule):
 
 #%%
 """ VARIABLE DEFINITION """
-
 source_domain =  sys.argv[1]
 target_domain =  sys.argv[2]
 dataset = int(eval(sys.argv[7]))
-REDUCE_DIM = int(eval(sys.argv[8]))
+N_classes = int(eval(sys.argv[8]))
+REDUCE_DIM = int(eval(sys.argv[9]))
 shuffle = False
 average=False
 binary=False
-oversample=True
+oversample=False
 if dataset==0:
     dataset='own'
     subjects = sorted([S.split('/')[-1] for S in glob.glob(os.path.join('../data','perception','*'))])
     allregions=sorted([R.split('/')[-1].split('.')[0] for R in glob.glob(os.path.join(f'../data/perception/{subjects[0]}','*.npy'))])
-    idx = [int(r) for r in sys.argv[4].split('+')]
-    region = allregions if int(eval(sys.argv[4]))==-1 else [allregions[i] for i in idx]
+    idx = [int(r) for r in sys.argv[5].split('+')]
+    region = allregions if int(eval(sys.argv[5]))==-1 else [allregions[i] for i in idx]
     
-    region_name='all_regions' if int(eval(sys.argv[4]))==-1 else '-'.join(region)
+    region_name='all_regions' if int(eval(sys.argv[5]))==-1 else '-'.join(region)
 else:
     dataset ='ds001246'
-    subjects = sorted([S.split('/')[-1].split('.')[0] for S in glob.glob(os.path.join(f'../{dataset}','*'))])
-    region = sys.argv[4]
+    subjects = sorted([S.split('/')[-1].split('.')[0] for S in glob.glob(os.path.join(f'../{dataset}','Subject*'))])
+    region = sys.argv[5]
     region_name = region
-subject = subjects[ int(eval(sys.argv[3]))]
-print(subject)
+
 methods = [DeepCORAL, DANN, MCD, FineTuning ]
 method_names = [m.__name__ for m in methods]
 methods = {n:m for n,m in zip(method_names,methods)}
 parameters = {m : {} for m in method_names}
 living=False
 
-method = sys.argv[5]
+subject = subjects[ int(eval(sys.argv[3]))]
+method = sys.argv[4]
 NITER_ = int(eval(sys.argv[6]))
+
 splitting='StratifiedGroupKFold'
 n_folds = 5
 ICA=True
@@ -124,12 +125,13 @@ def launch_priscilla():
     print('Total number of jobs: ', i)
 #%%
 fulldf=pd.DataFrame()
+
 if dataset =='own':
     outdir = os.path.join('../results/DA_comparison', region_name, f'{source_domain}_{target_domain}', subject)
 else:
-    outdir = os.path.join(f'../results/DA_comparison/{dataset}_allpresent_oversampled', region_name, f'{source_domain}_{target_domain}', subject)
+    outdir = os.path.join(f'../results/DA_comparison/{dataset}_resnet{N_classes}', region_name, f'{source_domain}_{target_domain}', subject)
 if not os.path.exists(outdir):
-    os.makedirs(outdir)
+	os.makedirs(outdir)
 """ MAIN PROGRAM """
 #%%
 
@@ -148,11 +150,16 @@ print(f'Fitting {method} for subject {subject} in region {region_name}...')
 Nts=range(10,110, 10) if dataset=='own' else [200, 250, 300]
 if not Path(result_filename).is_file():
     remove_noise=True
-    Source_X, Source_y, Source_g = MyFullDataset(source_domain, subject, region, remove_noise=remove_noise,dataset=dataset)[:]
-    Target_X, Target_y, Target_g = MyFullDataset(target_domain, subject, region, remove_noise=remove_noise,dataset=dataset)[:]
-    
-    Source_X, Source_y, Source_g = Source_X[Source_y!=9], Source_y[Source_y!=9], Source_g[Source_y!=9]
-    Target_X, Target_y, Target_g = Target_X[Target_y!=9], Target_y[Target_y!=9], Target_g[Target_y!=9]
+    Source_X, Source_y, Source_g = MyFullDataset(source_domain, subject, region, 
+                                                 remove_noise=remove_noise,
+                                                 dataset=dataset,
+                                                 N_classes=N_classes
+                                                 )[:]
+    Target_X, Target_y, Target_g = MyFullDataset(target_domain, subject, region, 
+                                                 remove_noise=remove_noise,
+                                                 dataset=dataset,
+                                                 N_classes=N_classes
+                                                 )[:]
     
     balanced_accuracy, balanced_accuracy_im, balanced_accuracy_imtr=pd.DataFrame(),pd.DataFrame(),pd.DataFrame()
     
