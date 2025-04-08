@@ -27,7 +27,7 @@ do
        --out="./slurm_logs/${method}_s${subj}data${dataset}n${N_classes}dim${dim_reduction}.out" \
        --error="./slurm_logs/${method}_s${subj}data${dataset}n${N_classes}dim${dim_reduction}.err" \
        --cpus-per-task=16 \
-       ../send_sh_job.sh DA_comparison.py perception imagery $subj $method $region $NITER $dataset $N_classes $REDUCE_DIM
+       ../send_sh_job.sh DA_comparison_DL.py perception imagery $subj $method $region $NITER $dataset $N_classes $REDUCE_DIM
        total_jobs=$(($total_jobs + 1))
 	done	
 done
