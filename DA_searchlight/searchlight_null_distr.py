@@ -99,7 +99,7 @@ pnaive = os.path.join(out_dir,f'map_{NITER}iter_{radius}mm_NAIVE_NULL.csv')
 pda = os.path.join(out_dir,f'map_{NITER}iter_{radius}mm_{DA_name}_NULL.csv')
 is_file = {'baseline': Path(pbase).is_file(), 'naive': Path(pnaive).is_file(), 'da': Path(pda).is_file()}
 
-if all(is_file.values()):
+if False: #all(is_file.values()):
     print('All results files found, nothing done.')
 else:
     print(is_file)
@@ -129,7 +129,7 @@ else:
         tgt_masker.mask_img
     )
     for i in tqdm(range(NITER)):
-        is_file = {'baseline': Path(pbase).is_file(), 'naive': Path(pnaive).is_file(), 'da': Path(pda).is_file()}
+        #is_file = {'baseline': Path(pbase).is_file()}
         Target_test_is = np.ones(tgt_events.target_category.values.size, dtype=bool)
         Target_test_is[Target_train_is[i]] = False
         xtrain = X[Source_train_is[i]]
@@ -144,13 +144,13 @@ else:
         xtrain_tgt = X_tgt[Target_train_is[i]]
         ytrain_tgt = tgt_events.target_category.values[Target_train_is[i]]
         y_train_tgt = shuffle(ytrain_tgt)
-        if not is_file['baseline']: searchlight[i] = search_light(xtrain, ytrain,LogisticRegression,A,xtest,ytest,scoring = balanced_accuracy_score, verbose=0) 
+        #if not is_file['baseline']: searchlight[i] = search_light(xtrain, ytrain,LogisticRegression,A,xtest,ytest,scoring = balanced_accuracy_score, verbose=0) 
         #f not is_file['naive']: searchlight_naive[i] = search_light(xtrain_naive, ytrain_naive,LogisticRegression,A,xtest,ytest,scoring = balanced_accuracy_score, verbose=0) 
         #if not is_file['da']: searchlight_DA[i] = search_light(xtrain, ytrain,LogisticRegression,A,xtest,ytest,scoring = balanced_accuracy_score,DA = DA, X_tgt = xtrain_tgt, y_tgt = ytrain_tgt, verbose=0) 
-        if is_file['baseline']: assert False, f'PROCESS HALTED AFTER ITER {i+1} BECAUSE FILE WAS FOUND: {pbase}'
+        #if is_file['baseline']: assert False, f'PROCESS HALTED AFTER ITER {i+1} BECAUSE FILE WAS FOUND: {pbase}'
   
     
   
-        searchlight.to_csv(pbase,index=False) 
-        
-        print('finised!')
+    searchlight.to_csv(pbase,index=False) 
+    
+    print('finised!')
