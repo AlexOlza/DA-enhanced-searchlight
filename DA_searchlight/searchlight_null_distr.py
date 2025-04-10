@@ -144,7 +144,7 @@ else:
         xtrain_tgt = X_tgt[Target_train_is[i]]
         ytrain_tgt = tgt_events.target_category.values[Target_train_is[i]]
         y_train_tgt = shuffle(ytrain_tgt)
-        #if not is_file['baseline']: searchlight[i] = search_light(xtrain, ytrain,LogisticRegression,A,xtest,ytest,scoring = balanced_accuracy_score, verbose=0) 
+        searchlight[i] = search_light(xtrain, ytrain,LogisticRegression,A,xtest,ytest,scoring = balanced_accuracy_score, verbose=0) 
         #f not is_file['naive']: searchlight_naive[i] = search_light(xtrain_naive, ytrain_naive,LogisticRegression,A,xtest,ytest,scoring = balanced_accuracy_score, verbose=0) 
         #if not is_file['da']: searchlight_DA[i] = search_light(xtrain, ytrain,LogisticRegression,A,xtest,ytest,scoring = balanced_accuracy_score,DA = DA, X_tgt = xtrain_tgt, y_tgt = ytrain_tgt, verbose=0) 
         #if is_file['baseline']: assert False, f'PROCESS HALTED AFTER ITER {i+1} BECAUSE FILE WAS FOUND: {pbase}'
