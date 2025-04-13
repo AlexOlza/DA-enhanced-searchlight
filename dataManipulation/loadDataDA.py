@@ -221,14 +221,13 @@ class DomainAdaptationGOD:
         return(Source, Target)
     
 #%%
-def reduce_dim(train, I_train, test, I_test, n_components, method):
+def reduce_dim(Source_X_train, Target_X_train, Source_X_test, Target_X_test, n_components, method):
     assert method in range(1,4)
     reducer = [TruncatedSVD(n_components), SparseRandomProjection(n_components), FastICA(n_components)][method-1]
     pipe = Pipeline([('scaler', StandardScaler()), ('reducer', reducer)])
-    pipe_tgt = Pipeline([('scaler', StandardScaler()), ('reducer', reducer)])
-    train = pipe.fit_transform(train)
-    test = pipe.transform(test)
-    # ica_tgt = FastICA(100).fit(I_train)
-    I_train = pipe_tgt.fit_transform(I_train)
-    I_test = pipe_tgt.transform(I_test)
-    return train, I_train, test, I_test
+    pipe = pipe.fit(np.vstack([Source_X_train, Target_X_train]))
+    Source_X_test= pipe.transform(Source_X_test)
+    Target_X_train = pipe.transform(Target_X_train)
+    Source_X_train = pipe.transform(Source_X_train)
+    Target_X_test = pipe.transform(Target_X_test)
+    return Source_X_train, Target_X_train,  Source_X_test, Target_X_test

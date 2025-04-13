@@ -16,7 +16,7 @@ Usage: python DA_comparison_DL.py source_domain:str target_domain:str subject:in
 """ THIRD PARTY IMPORTS """
 import sys
 import os
-# os.environ['TF_USE_LEGACY_KERAS']='True'
+os.environ['TF_USE_LEGACY_KERAS']='True'
 sys.path.append('..')
 import logging
 logging.getLogger("tensorflow").setLevel(logging.ERROR)
@@ -170,18 +170,18 @@ result_filename = os.path.join(outdir, f'DA_DL_{method}_reduce{REDUCE_DIM_NAME}.
 print('WILL PRODUCE FILE: ', result_filename)
 print(f'Fitting {method} for subject {subject} in region {region_name}...')
 Nts=range(10,20, 10) if dataset=='own' else [200, 250, 300]
-if not Path(result_filename).is_file():
+if True:#not Path(result_filename).is_file():
     remove_noise=True
     Source_X, Source_y, Source_g = MyFullDataset(source_domain, subject, region, 
                                                  remove_noise=remove_noise,
                                                  dataset=dataset,
                                                  N_classes=N_classes
-                                                 )[:]
+                                                 )
     Target_X, Target_y, Target_g = MyFullDataset(target_domain, subject, region, 
                                                  remove_noise=remove_noise,
                                                  dataset=dataset,
                                                  N_classes=N_classes
-                                                 )[:]
+                                                 )
     
     balanced_accuracy, balanced_accuracy_im, balanced_accuracy_imtr=pd.DataFrame(),pd.DataFrame(),pd.DataFrame()
     
@@ -220,9 +220,6 @@ if not Path(result_filename).is_file():
             I_train, I_test, IL_train, IL_test = Target_X[tr_idx], Target_X[te_idx], Target_y[tr_idx], Target_y[te_idx]
             # I_train contains "Nt" instances. Those are passed to the ADAPT method
             I_test_idx =d.Target_test_i[i]
-            if living:
-                IL_train[IL_train!=1]=0
-                IL_test[IL_test!=1]=0
             
             # if oversample: I_train, IL_train = ros.fit_resample(I_train, IL_train)
             # print('Resampled target dataset shape %s' % Counter(IL_train))
@@ -350,7 +347,7 @@ if not Path(result_filename).is_file():
             aux_ys = lr.predict(test_enc)             # Predictions in source domain 
             aux_ys_imag = lr.predict(I_test_enc)       # Predictions in target domain
             aux_ys_imag_tr = lr.predict(I_train_enc)
-            print(np.unique(aux_ys))
+            # print(np.unique(aux_ys))
             balanced_accuracy_s[i]=balanced_accuracy_score( test_label, aux_ys)
             
             balanced_accuracy_im_s[i]=balanced_accuracy_score( IL_test, aux_ys_imag)
