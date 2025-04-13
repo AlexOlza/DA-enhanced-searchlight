@@ -169,7 +169,7 @@ REDUCE_DIM_NAME = ['NONE', 'TSVD', 'SRP', 'ICA'][REDUCE_DIM]
 result_filename = os.path.join(outdir, f'DA_DL_{method}_reduce{REDUCE_DIM_NAME}.csv')
 print('WILL PRODUCE FILE: ', result_filename)
 print(f'Fitting {method} for subject {subject} in region {region_name}...')
-Nts=range(10,20, 10) if dataset=='own' else [200, 250, 300]
+Nts=range(10,110, 10) if dataset=='own' else [200, 250, 300]
 if True:#not Path(result_filename).is_file():
     remove_noise=True
     Source_X, Source_y, Source_g = MyFullDataset(source_domain, subject, region, 
