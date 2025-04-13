@@ -176,12 +176,12 @@ if True:#not Path(result_filename).is_file():
                                                  remove_noise=remove_noise,
                                                  dataset=dataset,
                                                  N_classes=N_classes
-                                                 )
+                                                 )[:]
     Target_X, Target_y, Target_g = MyFullDataset(target_domain, subject, region, 
                                                  remove_noise=remove_noise,
                                                  dataset=dataset,
                                                  N_classes=N_classes
-                                                 )
+                                                 )[:]
     
     balanced_accuracy, balanced_accuracy_im, balanced_accuracy_imtr=pd.DataFrame(),pd.DataFrame(),pd.DataFrame()
     
