@@ -47,6 +47,16 @@ from dataManipulation.loadDataDA import DomainAdaptationData, DomainAdaptationSp
 from dataManipulation.loadData import MyFullDataset
 
 #%%
+# Disable prints, which are inside ADAPT fit methods and I can't disable them:
+class HiddenPrints:
+    def __enter__(self):
+        self._original_stdout = sys.stdout
+        sys.stdout = open(os.devnull, 'w')
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        sys.stdout.close()
+        sys.stdout = self._original_stdout
+#%%
 
 # Define networks
 # from tensorflow.keras.layers import Dense, ReLU, Softmax, Activation, Flatten
@@ -117,17 +127,20 @@ shuffle = False
 average=False
 binary=False
 oversample=False
-if dataset==0:
-    dataset='own'
+
+dataset = ['own', 'ds0012146', 'ds001246_semantic'][dataset]
+if dataset=='own':
     subjects = sorted([S.split('/')[-1] for S in glob.glob(os.path.join('../data','perception','*'))])
     allregions=sorted([R.split('/')[-1].split('.')[0] for R in glob.glob(os.path.join(f'../data/perception/{subjects[0]}','*.npy'))])
     idx = [int(r) for r in sys.argv[5].split('+')]
-    region = allregions if int(eval(sys.argv[5]))==-1 else [allregions[i] for i in idx]
-    
+    region = allregions if int(eval(sys.argv[5]))==-1 else [allregions[i] for i in idx]  
     region_name='all_regions' if int(eval(sys.argv[5]))==-1 else '-'.join(region)
-else:
-    dataset ='ds001246'
+elif dataset =='ds001246':  
     subjects = sorted([S.split('/')[-1].split('.')[0] for S in glob.glob(os.path.join(f'../{dataset}','Subject*'))])
+    region = sys.argv[5]
+    region_name = region
+elif dataset =='ds001246_semantic':
+    subjects = sorted([S.split('/')[-1].split('.')[0] for S in glob.glob(os.path.join(f'../ds001246','Subject[0-9].h5'))])
     region = sys.argv[5]
     region_name = region
 
@@ -150,8 +163,10 @@ fulldf=pd.DataFrame()
 
 if dataset =='own':
     outdir = os.path.join('../results/DA_comparison', region_name, f'{source_domain}_{target_domain}', subject)
-else:
+elif dataset=='ds001246':
     outdir = os.path.join(f'../results/DA_comparison/{dataset}_resnet{N_classes}', region_name, f'{source_domain}_{target_domain}', subject)
+else:
+    outdir = os.path.join(f'../results/DA_comparison/{dataset}', region_name, f'{source_domain}_{target_domain}', subject)
 if not os.path.exists(outdir):
 	os.makedirs(outdir)
 """ MAIN PROGRAM """
@@ -197,168 +212,169 @@ if True:#not Path(result_filename).is_file():
         prediction_fname =os.path.join(outdir, f'DL_{method}_preds_{Nt}_reduce{REDUCE_DIM_NAME}')
         NITER =min(NITER_, len(d.Target_train_y))
         prediction_matrix =-1 *np.ones((len(Target_y),NITER))
-        for i in tqdm(range(NITER)):
-            
-            train = d.Source_train_X[i]
-            test = d.Source_test_X[i]
-            train_label = np.ravel(d.Source_train_y[i])  
-            test_label = np.ravel(d.Source_test_y[i])
-            
-            # print('Original dataset shape %s' % Counter(train_label))
-            # ros = RandomOverSampler(random_state=i)
-            # if living:
-            #     train_label[train_label!=1]=0
-            #     test_label[test_label!=1]=0
-            # # print('Original dataset shape %s' % Counter(train_label))
-            # ros = RandomOverSampler(random_state=i)
-           
-            # if oversample: train, train_label = ros.fit_resample(train, train_label)
-            # print('Resampled dataset shape %s' % Counter(train_label))
-            # We select a number "Nt" of instances from the target domain (usually Targetery)
-            tr_idx = d.Target_train_i[i]
-            te_idx =  d.Target_test_i[i]
-            I_train, I_test, IL_train, IL_test = Target_X[tr_idx], Target_X[te_idx], Target_y[tr_idx], Target_y[te_idx]
-            # I_train contains "Nt" instances. Those are passed to the ADAPT method
-            I_test_idx =d.Target_test_i[i]
-            
-            # if oversample: I_train, IL_train = ros.fit_resample(I_train, IL_train)
-            # print('Resampled target dataset shape %s' % Counter(IL_train))
-            
-            if REDUCE_DIM!=0:
-                train, I_train, test, I_test = reduce_dim(train, I_train, test, I_test, n_components = 100, method=REDUCE_DIM)    
-
-            n_voxels = train.shape[-1]
-            
-            if method=='FineTuning':
-                # encoder = Encoder_model(n_voxels,10)
-                # task = Task_model(n_voxels)
-                # task = get_task(units=N_classes)
-                # discriminator = Discriminator_model(n_voxels)
-                FineTuning_model = FineTuning(#encoder, task,
-                                              # task=task
-                                              # X=train, y=train_label
-                                              )
-                FineTuning_model.compile(
-                    # loss=tf.keras.losses.CategoricalCrossentropy(from_logits=False),
-                                   optimizer=tf.keras.optimizers.legacy.Adam(0.001), 
-                                   metrics=["accuracy"]
-                                   )
-                                   
-                # Train FineTuning
-                FineTuning_model.fit(train, train_label, 
-                                     # batch_size=64,
-                                     epochs=100,
-                                     # validation_data=(I_train,IL_train),
-                                     verbose=0
-                              )
-
-                #%%
-
-                clf = FineTuning(encoder=FineTuning_model.encoder_,
-                                 # loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=False),
-                                       pretrain=False,#True,  
-                                       pretrain__epochs=30, random_state=random_state,
-                                       optimizer=tf.keras.optimizers.legacy.Adam(0.001),
-                                       optimizer_enc=tf.keras.optimizers.legacy.Adam(0.0001),
-                                       metrics = ['accuracy'])
-
-                clf.fit(I_train,IL_train, epochs=10, verbose=0)
-
-
-                # print("Evaluate")
-                # result = clf.predict(I_train)
-                # pred_classes = np.where(result.ravel()>=0.5,1,0)
-                # print(balanced_accuracy_score(pred_classes, IL_train))
-                # result = clf.predict(I_test)
-                # pred_classes = np.where(result.ravel()>=0.5,1,0)
-                # print(balanced_accuracy_score(pred_classes, IL_test))
-                # import pandas as pd
-                # from matplotlib import pyplot as plt
-                # pd.DataFrame(clf.history_).plot(figsize=(8, 5))
-                # plt.title(f"Training history ({clf.count_params()} parameters)", fontsize=14); plt.xlabel("Epochs"); plt.ylabel("Scores")
-                # plt.legend(ncol=2)
-                # plt.show()
-            elif method=='DANN':
-                # encoder = Encoder_model(n_voxels,10)
-                # task = Task_model(n_voxels)
-                # discriminator = Discriminator_model(n_voxels)
-                # encoder = make_encoder_model(n_voxels)
-                # discriminator = make_discriminator_model(n_voxels)
-                # task = make_task_model(n_voxels)
-                clf = DANN()#encoder=encoder, discriminator=discriminator)
-                clf.compile(loss=tf.keras.losses.BinaryCrossentropy(from_logits=False),
-                                    optimizer=tf.keras.optimizers.legacy.Adam(0.001),
-                                    optimizer_enc=tf.keras.optimizers.legacy.Adam(0.0001),
-                                    metrics=["accuracy"])
-                                   
-                # Train DANN
-                clf =clf.fit(X=train,y=train_label, Xt=I_train,batch_size=64, epochs=500,
-                            verbose=0 )
-
-
-            elif method=='DeepCORAL':
-                # encoder = Encoder_model(n_voxels,10)
-                # task = Task_model(n_voxels)
-                clf = DeepCORAL(#encoder, task,
-                                Xt=I_train, metrics=["accuracy"],
-                                  optimizer=tf.keras.optimizers.legacy.Adam(0.001),
-                                  optimizer_enc=tf.keras.optimizers.legacy.Adam(0.0001),
-                                  random_state=random_state)
-
-                clf.fit(X=train,y=train_label, epochs=200, verbose=0)
-
-            elif method=='MCD':
-                # def get_task(activation="sigmoid", units=N_classes):
-                #     model = tf.keras.Sequential()
-                #     model.add(Flatten())
-                #     model.add(Dense(10, activation="relu"))
-                #     model.add(Dense(10, activation="relu"))
-                #     model.add(Dense(units, activation=activation))
-                #     return model
-                # encoder = Encoder_model(n_voxels,10)
-                # task = Task_model(n_voxels, output_dim=N_classes)
-                # task = get_task(units=N_classes)#make_task_model(n_voxels)
-                # discriminator = Discriminator_model(n_voxels)#.build(1,n_voxels)
-                # loss = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=False)
-                clf = MCD(Xt=I_train, metrics=["accuracy"], 
-                          # task=task,
-                          # encoder = encoder,
-                              # loss='categorical_crossentropy',#loss,
-                                  optimizer=tf.keras.optimizers.legacy.Adam(0.001),
-                                  optimizer_enc=tf.keras.optimizers.legacy.Adam(0.0001),
-                                  random_state=random_state)
-
-                clf.fit(X=train,y=train_label,
-                        # Xt=I_train, yt=IL_train, 
-                        epochs=100, verbose=0)  
+        with HiddenPrints():
+            for i in tqdm(range(NITER)):
                 
-
-            else:
-                assert False, 'Unrecognised DA method'     
-            
-            train_enc = clf.encoder_.predict(train)
-            # train_enc__ = clf.transform(train)
-            I_train_enc = clf.encoder_.predict(I_train)
-            test_enc = clf.encoder_.predict(test)
-            I_test_enc = clf.encoder_.predict(I_test)
-            
-            lr = LogisticRegression().fit(train_enc, train_label)
-            
-            aux_ys = lr.predict(test_enc)             # Predictions in source domain 
-            aux_ys_imag = lr.predict(I_test_enc)       # Predictions in target domain
-            aux_ys_imag_tr = lr.predict(I_train_enc)
-            # print(np.unique(aux_ys))
-            balanced_accuracy_s[i]=balanced_accuracy_score( test_label, aux_ys)
-            
-            balanced_accuracy_im_s[i]=balanced_accuracy_score( IL_test, aux_ys_imag)
-            balanced_accuracy_imtr_s[i]=balanced_accuracy_score( IL_train, aux_ys_imag_tr)
-            
-            prediction_matrix[I_test_idx,i] = aux_ys_imag
-        np.save(prediction_fname,prediction_matrix)
-        balanced_accuracy[Nt]=balanced_accuracy_s      
-        balanced_accuracy_im[Nt]=balanced_accuracy_im_s
-        balanced_accuracy_imtr[Nt]=balanced_accuracy_imtr_s
+                train = d.Source_train_X[i]
+                test = d.Source_test_X[i]
+                train_label = np.ravel(d.Source_train_y[i])  
+                test_label = np.ravel(d.Source_test_y[i])
+                
+                # print('Original dataset shape %s' % Counter(train_label))
+                # ros = RandomOverSampler(random_state=i)
+                # if living:
+                #     train_label[train_label!=1]=0
+                #     test_label[test_label!=1]=0
+                # # print('Original dataset shape %s' % Counter(train_label))
+                # ros = RandomOverSampler(random_state=i)
+               
+                # if oversample: train, train_label = ros.fit_resample(train, train_label)
+                # print('Resampled dataset shape %s' % Counter(train_label))
+                # We select a number "Nt" of instances from the target domain (usually Targetery)
+                tr_idx = d.Target_train_i[i]
+                te_idx =  d.Target_test_i[i]
+                I_train, I_test, IL_train, IL_test = Target_X[tr_idx], Target_X[te_idx], Target_y[tr_idx], Target_y[te_idx]
+                # I_train contains "Nt" instances. Those are passed to the ADAPT method
+                I_test_idx =d.Target_test_i[i]
+                
+                # if oversample: I_train, IL_train = ros.fit_resample(I_train, IL_train)
+                # print('Resampled target dataset shape %s' % Counter(IL_train))
+                
+                if REDUCE_DIM!=0:
+                    train, I_train, test, I_test = reduce_dim(train, I_train, test, I_test, n_components = 100, method=REDUCE_DIM)    
     
+                n_voxels = train.shape[-1]
+                
+                if method=='FineTuning':
+                    # encoder = Encoder_model(n_voxels,10)
+                    # task = Task_model(n_voxels)
+                    # task = get_task(units=N_classes)
+                    # discriminator = Discriminator_model(n_voxels)
+                    FineTuning_model = FineTuning(#encoder, task,
+                                                  # task=task
+                                                  # X=train, y=train_label
+                                                  )
+                    FineTuning_model.compile(
+                        # loss=tf.keras.losses.CategoricalCrossentropy(from_logits=False),
+                                       optimizer=tf.keras.optimizers.legacy.Adam(0.001), 
+                                       metrics=["accuracy"]
+                                       )
+                                       
+                    # Train FineTuning
+                    FineTuning_model.fit(train, train_label, 
+                                         # batch_size=64,
+                                         epochs=100,
+                                         # validation_data=(I_train,IL_train),
+                                         verbose=0
+                                  )
+    
+                    #%%
+    
+                    clf = FineTuning(encoder=FineTuning_model.encoder_,
+                                     # loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=False),
+                                           pretrain=False,#True,  
+                                           pretrain__epochs=30, random_state=random_state,
+                                           optimizer=tf.keras.optimizers.legacy.Adam(0.001),
+                                           optimizer_enc=tf.keras.optimizers.legacy.Adam(0.0001),
+                                           metrics = ['accuracy'])
+    
+                    clf.fit(I_train,IL_train, epochs=10, verbose=0)
+    
+    
+                    # print("Evaluate")
+                    # result = clf.predict(I_train)
+                    # pred_classes = np.where(result.ravel()>=0.5,1,0)
+                    # print(balanced_accuracy_score(pred_classes, IL_train))
+                    # result = clf.predict(I_test)
+                    # pred_classes = np.where(result.ravel()>=0.5,1,0)
+                    # print(balanced_accuracy_score(pred_classes, IL_test))
+                    # import pandas as pd
+                    # from matplotlib import pyplot as plt
+                    # pd.DataFrame(clf.history_).plot(figsize=(8, 5))
+                    # plt.title(f"Training history ({clf.count_params()} parameters)", fontsize=14); plt.xlabel("Epochs"); plt.ylabel("Scores")
+                    # plt.legend(ncol=2)
+                    # plt.show()
+                elif method=='DANN':
+                    # encoder = Encoder_model(n_voxels,10)
+                    # task = Task_model(n_voxels)
+                    # discriminator = Discriminator_model(n_voxels)
+                    # encoder = make_encoder_model(n_voxels)
+                    # discriminator = make_discriminator_model(n_voxels)
+                    # task = make_task_model(n_voxels)
+                    clf = DANN()#encoder=encoder, discriminator=discriminator)
+                    clf.compile(loss=tf.keras.losses.BinaryCrossentropy(from_logits=False),
+                                        optimizer=tf.keras.optimizers.legacy.Adam(0.001),
+                                        optimizer_enc=tf.keras.optimizers.legacy.Adam(0.0001),
+                                        metrics=["accuracy"])
+                                       
+                    # Train DANN
+                    clf =clf.fit(X=train,y=train_label, Xt=I_train,batch_size=64, epochs=500,
+                                verbose=0 )
+    
+    
+                elif method=='DeepCORAL':
+                    # encoder = Encoder_model(n_voxels,10)
+                    # task = Task_model(n_voxels)
+                    clf = DeepCORAL(#encoder, task,
+                                    Xt=I_train, metrics=["accuracy"],
+                                      optimizer=tf.keras.optimizers.legacy.Adam(0.001),
+                                      optimizer_enc=tf.keras.optimizers.legacy.Adam(0.0001),
+                                      random_state=random_state)
+    
+                    clf.fit(X=train,y=train_label, epochs=200, verbose=0)
+    
+                elif method=='MCD':
+                    # def get_task(activation="sigmoid", units=N_classes):
+                    #     model = tf.keras.Sequential()
+                    #     model.add(Flatten())
+                    #     model.add(Dense(10, activation="relu"))
+                    #     model.add(Dense(10, activation="relu"))
+                    #     model.add(Dense(units, activation=activation))
+                    #     return model
+                    # encoder = Encoder_model(n_voxels,10)
+                    # task = Task_model(n_voxels, output_dim=N_classes)
+                    # task = get_task(units=N_classes)#make_task_model(n_voxels)
+                    # discriminator = Discriminator_model(n_voxels)#.build(1,n_voxels)
+                    # loss = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=False)
+                    clf = MCD(Xt=I_train, metrics=["accuracy"], 
+                              # task=task,
+                              # encoder = encoder,
+                                  # loss='categorical_crossentropy',#loss,
+                                      optimizer=tf.keras.optimizers.legacy.Adam(0.001),
+                                      optimizer_enc=tf.keras.optimizers.legacy.Adam(0.0001),
+                                      random_state=random_state)
+    
+                    clf.fit(X=train,y=train_label,
+                            # Xt=I_train, yt=IL_train, 
+                            epochs=100, verbose=0)  
+                    
+    
+                else:
+                    assert False, 'Unrecognised DA method'     
+                
+                train_enc = clf.encoder_.predict(train)
+                # train_enc__ = clf.transform(train)
+                I_train_enc = clf.encoder_.predict(I_train)
+                test_enc = clf.encoder_.predict(test)
+                I_test_enc = clf.encoder_.predict(I_test)
+                
+                lr = LogisticRegression().fit(train_enc, train_label)
+                
+                aux_ys = lr.predict(test_enc)             # Predictions in source domain 
+                aux_ys_imag = lr.predict(I_test_enc)       # Predictions in target domain
+                aux_ys_imag_tr = lr.predict(I_train_enc)
+                # print(np.unique(aux_ys))
+                balanced_accuracy_s[i]=balanced_accuracy_score( test_label, aux_ys)
+                
+                balanced_accuracy_im_s[i]=balanced_accuracy_score( IL_test, aux_ys_imag)
+                balanced_accuracy_imtr_s[i]=balanced_accuracy_score( IL_train, aux_ys_imag_tr)
+                
+                prediction_matrix[I_test_idx,i] = aux_ys_imag
+            np.save(prediction_fname,prediction_matrix)
+            balanced_accuracy[Nt]=balanced_accuracy_s      
+            balanced_accuracy_im[Nt]=balanced_accuracy_im_s
+            balanced_accuracy_imtr[Nt]=balanced_accuracy_imtr_s
+        
     balanced_accuracy['Domain']=source_domain
     balanced_accuracy_im['Domain']=target_domain
     balanced_accuracy_imtr['Domain']=target_domain+'_tr'

@@ -83,8 +83,37 @@ class MyFullDataset(): # Loads the whole dataset for a domain, subject and regio
             self.labels = x.y.to_numpy()
             self.trials = x.trial
             self.datax= x.drop(['trial', 'y'], axis=1).to_numpy()
+        elif dataset=='ds001246_semantic':
+            data_dir = kwargs.get('data_dir',DATAPATH_ds001246)
+            self.data_dir=data_dir
+            if isinstance(regions, str):
+                regions = [regions]
+            self.regions=regions 
+            self.file = f'{data_dir}/{subject}.h5'
+            domain_idx = 2 if domain=='perception' else 3
+            data = bdpy.BData(self.file)
+            region_voxels = data.select(' + '.join([f'ROI_{r}' for r in self.regions]))
+            categories = data.select('category_index')
+            runs = data.select('Run')
+            datatype = data.select('DataType')
+            idx = (datatype == domain_idx).flatten()  
+            
+
+            self.datax = region_voxels[idx,:]
+            self.trials = runs[idx].ravel()
+            
+            if semantic_groups:
+                self.labels, self.fine_grained_labels, self.categories, self.fine_grained_categories = self.__group_categories_semantic__(categories[idx].ravel())
+                keep = self.labels!=9
+                self.datax = self.datax[keep, :]
+                self.labels = self.labels[keep]
+                self.trials = self.trials[keep]
+                self.categories = self.categories[keep]
+            else:
+                self.labels= categories[idx].ravel()
+            
         else:
-            assert dataset == 'ds001246', 'Accepted values for arg. dataset are "own" (default) or "ds001246" or "ds001246_unprocessed"'
+            assert dataset == 'ds001246', 'Accepted values for arg. dataset are "own" (default) or "ds001246" or "ds001246_semantic"'
             data_dir = kwargs.get('data_dir',DATAPATH_ds001246)
             self.data_dir=data_dir
             if isinstance(regions, str):
@@ -107,7 +136,7 @@ class MyFullDataset(): # Loads the whole dataset for a domain, subject and regio
                 self.labels= categories[idx].ravel()
             self.trials = runs[idx].ravel()
             
-    def __group_categories__deprecated(self,categories):    
+    def __group_categories_semantic__(self,categories):    
         category_meanings = pd.read_csv(f'{self.data_dir}/category_meaning.csv')
         merged = pd.merge(category_meanings,pd.DataFrame(categories,columns=['category_id']),on='category_id')
         return(merged.semantic_group_id.values,merged.category_id.values,merged.semantic_group.values, merged.category.values)
