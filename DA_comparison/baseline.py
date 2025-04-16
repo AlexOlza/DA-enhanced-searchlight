@@ -60,14 +60,14 @@ shuffle = False
 average=False
 binary=False
 oversample=False
-dataset = ['own', 'ds0012146', 'ds001246_semantic'][dataset]
+dataset = ['own', 'ds001246', 'ds001246_semantic'][dataset]
 if dataset=='own':
     subjects = sorted([S.split('/')[-1] for S in glob.glob(os.path.join('../data','perception','*'))])
     allregions=sorted([R.split('/')[-1].split('.')[0] for R in glob.glob(os.path.join(f'../data/perception/{subjects[0]}','*.npy'))])
     idx = [int(r) for r in sys.argv[5].split('+')]
     region = allregions if int(eval(sys.argv[5]))==-1 else [allregions[i] for i in idx]  
     region_name='all_regions' if int(eval(sys.argv[5]))==-1 else '-'.join(region)
-elif dataset =='ds0012146':  
+elif dataset =='ds001246':  
     subjects = sorted([S.split('/')[-1].split('.')[0] for S in glob.glob(os.path.join(f'../ds001246','Subject[0-9].h5'))])
     region = sys.argv[5]
     region_name = region
@@ -86,8 +86,11 @@ n_folds = 5
 living=False
 if dataset =='own':
     outdir = os.path.join('../results/DA_comparison', region_name, f'{source_domain}_{target_domain}', subject)
+elif dataset=='ds001246':
+    outdir = os.path.join(f'../results/DA_comparison/ds001246_resnet{N_classes}', region_name, f'{source_domain}_{target_domain}', subject)
 else:
-    outdir = os.path.join(f'../results/DA_comparison/{dataset}_resnet{N_classes}', region_name, f'{source_domain}_{target_domain}', subject)
+    outdir = os.path.join(f'../results/DA_comparison/{dataset}', region_name, f'{source_domain}_{target_domain}', subject)
+
 if not os.path.exists(outdir):
     os.makedirs(outdir)
 
