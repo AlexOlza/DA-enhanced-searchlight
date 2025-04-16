@@ -97,8 +97,8 @@ print(f'Fitting baseline {concat_tgt_marker} for subject {subject} in region {re
 
 remove_noise=True
 
-if not False:#Path(fname).is_file():
-    
+if not Path(fname).is_file():
+    print('This will produce file ',fname)
     t0=time()      
 
     results={}
