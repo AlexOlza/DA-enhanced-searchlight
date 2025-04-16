@@ -60,17 +60,19 @@ shuffle = False
 average=False
 binary=False
 oversample=False
-if dataset==0:
-    dataset='own'
+dataset = ['own', 'ds0012146', 'ds001246_semantic'][dataset]
+if dataset=='own':
     subjects = sorted([S.split('/')[-1] for S in glob.glob(os.path.join('../data','perception','*'))])
     allregions=sorted([R.split('/')[-1].split('.')[0] for R in glob.glob(os.path.join(f'../data/perception/{subjects[0]}','*.npy'))])
     idx = [int(r) for r in sys.argv[5].split('+')]
-    region = allregions if int(eval(sys.argv[5]))==-1 else [allregions[i] for i in idx]
-    
+    region = allregions if int(eval(sys.argv[5]))==-1 else [allregions[i] for i in idx]  
     region_name='all_regions' if int(eval(sys.argv[5]))==-1 else '-'.join(region)
-else:
-    dataset ='ds001246'
-    subjects = sorted([S.split('/')[-1].split('.')[0] for S in glob.glob(os.path.join(f'../{dataset}','Subject*'))])
+elif dataset =='ds0012146':  
+    subjects = sorted([S.split('/')[-1].split('.')[0] for S in glob.glob(os.path.join(f'../{dataset}','Subject[0-9].h5'))])
+    region = sys.argv[5]
+    region_name = region
+elif dataset =='ds001246_semantic':
+    subjects = sorted([S.split('/')[-1].split('.')[0] for S in glob.glob(os.path.join(f'../ds001246','Subject[0-9].h5'))])
     region = sys.argv[5]
     region_name = region
     
