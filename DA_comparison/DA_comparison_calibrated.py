@@ -235,7 +235,7 @@ if True:# not Path(os.path.join(outdir, f'DA_{method}_calibrated.csv')).is_file(
             balanced_accuracy_im_s[i]=balanced_accuracy_score( IL_test, aux_ys_Target)
             balanced_accuracy_imtr_s[i]=balanced_accuracy_score( IL_train, aux_ys_Target_tr)
             prediction_matrix[I_test_idx,i] = aux_ys_Target
-            proba_matrix[I_test_idx,i*N_classes:(i+1)*N_classes] = aux_ys_Target
+            proba_matrix[I_test_idx,i*N_classes:(i+1)*N_classes] = aux_ps_Target
         np.save(prediction_fname,prediction_matrix)
         np.save(probas_fname,proba_matrix)
         balanced_accuracy[Nt]=balanced_accuracy_s      
