@@ -84,7 +84,8 @@ if dataset=='own':
     idx = [int(r) for r in sys.argv[5].split('+')]
     region = allregions if int(eval(sys.argv[5]))==-1 else [allregions[i] for i in idx]  
     region_name='all_regions' if int(eval(sys.argv[5]))==-1 else '-'.join(region)
-elif dataset =='ds001246':  
+elif dataset =='ds0012146': 
+    dataset = 'ds001246'
     subjects = sorted([S.split('/')[-1].split('.')[0] for S in glob.glob(os.path.join(f'../ds001246','Subject[0-9].h5'))])
     region = sys.argv[5]
     region_name = region
