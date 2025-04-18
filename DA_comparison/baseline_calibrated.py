@@ -194,7 +194,7 @@ if not Path(fname).is_file():
             if concat_tgt==1:
                 train = np.vstack([train,I_train])
                 train_label = np.hstack([train_label,IL_train])
-            base_pipeline.fit(train,train_label)
+
             clf=clf.fit(train,train_label)
             aux_ys = clf.predict(test)                 # Predictions in source domain 
             aux_ys_imag = clf.predict(I_test)          # Predictions in target domain
