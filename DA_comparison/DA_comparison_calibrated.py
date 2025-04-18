@@ -46,8 +46,8 @@ if not sys.warnoptions:
 from dataManipulation.loadDataDA import DomainAdaptationData, DomainAdaptationSplitter, DomainAdaptationGOD
 from dataManipulation.loadData import MyFullDataset
 from adapt.utils import check_arrays
-from adapt.base import BaseAdaptEstimator
-from algorithms.calibration import PlattScaler                      
+# from adapt.base import BaseAdaptEstimator
+# from algorithms.calibration import PlattScaler                      
 from sklearn.preprocessing import LabelBinarizer
 class RegularTransferLC(RegularTransferLR):
 	def fit(self, Xt=None, yt=None, **fit_params):       
