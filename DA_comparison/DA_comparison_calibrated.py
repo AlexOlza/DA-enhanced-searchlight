@@ -46,7 +46,8 @@ if not sys.warnoptions:
 from dataManipulation.loadDataDA import DomainAdaptationData, DomainAdaptationSplitter, DomainAdaptationGOD
 from dataManipulation.loadData import MyFullDataset
 from adapt.utils import check_arrays
-                         
+from adapt.base import BaseAdaptEstimator
+from algorithms.calibration import PlattScaler                      
 from sklearn.preprocessing import LabelBinarizer
 class RegularTransferLC(RegularTransferLR):
 	def fit(self, Xt=None, yt=None, **fit_params):       
@@ -60,6 +61,9 @@ class RegularTransferLC(RegularTransferLR):
 		# print(yt.shape) -> this print is present in the current release of ADAPT, and it is very annoying
 		
 		return super().fit(Xt, yt, **fit_params)
+
+
+
 from imblearn.pipeline import Pipeline
 from sklearn.calibration import CalibratedClassifierCV
 
@@ -73,19 +77,22 @@ shuffle = False
 average=False
 binary=False
 oversample=False
-if dataset==0:
-    dataset='own'
+dataset = ['own', 'ds0012146', 'ds001246_semantic'][dataset]
+if dataset=='own':
     subjects = sorted([S.split('/')[-1] for S in glob.glob(os.path.join('../data','perception','*'))])
     allregions=sorted([R.split('/')[-1].split('.')[0] for R in glob.glob(os.path.join(f'../data/perception/{subjects[0]}','*.npy'))])
     idx = [int(r) for r in sys.argv[5].split('+')]
-    region = allregions if int(eval(sys.argv[5]))==-1 else [allregions[i] for i in idx]
-    
+    region = allregions if int(eval(sys.argv[5]))==-1 else [allregions[i] for i in idx]  
     region_name='all_regions' if int(eval(sys.argv[5]))==-1 else '-'.join(region)
-else:
-    dataset ='ds001246'
-    subjects = sorted([S.split('/')[-1].split('.')[0] for S in glob.glob(os.path.join(f'../{dataset}','Subject*'))])
+elif dataset =='ds001246':  
+    subjects = sorted([S.split('/')[-1].split('.')[0] for S in glob.glob(os.path.join(f'../{dataset}','Subject[0-9].h5'))])
     region = sys.argv[5]
     region_name = region
+elif dataset =='ds001246_semantic':
+    subjects = sorted([S.split('/')[-1].split('.')[0] for S in glob.glob(os.path.join(f'../ds001246','Subject[0-9].h5'))])
+    region = sys.argv[5]
+    region_name = region
+
 
 
 methods = [PRED, FA, SA,
@@ -120,14 +127,8 @@ if not os.path.exists(outdir):
 t0=time()
 params_base = {} if dataset=='own' else {'n_jobs':-1,'class_weight':'balanced'}
 
-estimator = Pipeline(steps=[
-    ('oversample', RandomOverSampler(random_state=42)),
-    ('clf', CalibratedClassifierCV(
-        base_estimator=LogisticRegression(**params_base),
-        method='sigmoid',  # or 'isotonic'
-        cv=5
-    ))
-])
+# Now wrap the pipeline in CalibratedClassifierCV
+
 results={}
 t0=time()
 
@@ -135,7 +136,20 @@ t0=time()
 
 DA_method =  methods[method]
 params = parameters[method]
-
+# class DA(DA_method):
+#     def __init__(self,  **params):
+#         super().__init__(**params)
+#         self.pretrain = True
+#     def predict_proba(self,X, domain = None, **predict_params):
+#         if domain is None:
+#                     domain = "tgt"
+#         X = self.transform(X, domain=domain)
+        
+#         if domain in ["tgt", "target"]:
+#             return self.estimator_.predict_proba(X, **predict_params)
+#         else:
+#             return self.estimator_src_.predict_proba(X, **predict_params)
+        
 Nts=range(10,110, 10) if dataset=='own' else [200, 250, 300]
 result_fname = os.path.join(outdir, f'DA_{method}_calibrated.csv')
 print('WILL PRODUCE FILE: ', result_fname)
@@ -174,6 +188,13 @@ if True:# not Path(os.path.join(outdir, f'DA_{method}_calibrated.csv')).is_file(
         proba_matrix =-1 *np.ones((len(Target_y),NITER*N_classes))
         for i in tqdm(range(NITER)):
             
+            estimator = Pipeline(steps=[
+                ('oversample', RandomOverSampler(random_state=42)),
+                ('clf', 
+                    LogisticRegression(**params_base),
+                )
+            ])
+
             train = d.Source_train_X[i]
             test = d.Source_test_X[i]
 
@@ -202,42 +223,43 @@ if True:# not Path(os.path.join(outdir, f'DA_{method}_calibrated.csv')).is_file(
             if method=='RegularTransferLC':
             	# Parameter-based methods from the ADAPT library require an estimator that has been previously fit to the source domain
                 estimator.fit(train,train_label)
-    
-                clf = DA_method( estimator,verbose=0,Xt=I_train,yt=IL_train, **params)   # clf recieves "Nt" instances of the target domain         
+                clf = DA_method( estimator= estimator['clf'],verbose=0,Xt=I_train,yt=IL_train, **params)   # clf recieves "Nt" instances of the target domain         
                 clf.fit(I_train, IL_train)
+                # clf = PlattScaler(clf_uncal)
             else:
+                estimator.fit(train,train_label)
                 clf = DA_method(estimator = estimator,verbose=0,Xt=I_train,yt=IL_train, **params)   
          
                 clf.fit(train,train_label,Xt=I_train,yt=IL_train)               # Feature and instance based methods perform the fitting and adaptation in one step
                 								# so the estimator must not be previously fitted to the source domain
-                                                     
+                # clf = PlattScaler(clf_uncal)                    
             
             if method not in  ['TrAdaBoost', 'RegularTransferLC']:
                 aux_ys = clf.predict(test, domain='src')                 # Predictions in source domain 
                 aux_ys_Target = clf.predict(I_test, domain = 'tgt')        # Predictions in target domain
                 aux_ys_Target_tr = clf.predict(I_train, domain = 'tgt')
-                try:
-                    # aux_ys = clf.predict_proba(test, domain='src')                 # Predictions in source domain 
-                    aux_ps_Target = clf.predict_proba(I_test, domain = 'tgt')        # Predictions in target domain
-                    # aux_ys_Target_tr = clf.predict_proba(I_train, domain = 'tgt')
-                except:
-                    aux_ps_Target = -2*np.ones((len(I_test), N_classes))
+                # try:
+                #     # aux_ys = clf.predict_proba(test, domain='src')                 # Predictions in source domain 
+                #     aux_ps_Target = clf.predict_proba(I_test, domain = 'tgt')        # Predictions in target domain
+                #     # aux_ys_Target_tr = clf.predict_proba(I_train, domain = 'tgt')
+                # except:
+                #     aux_ps_Target = -2*np.ones((len(I_test), N_classes))
             else:
                  aux_ys = clf.predict(test)                 # Predictions in source domain 
                  aux_ys_Target = clf.predict(I_test)          # Predictions in target domain
                  aux_ys_Target_tr = clf.predict(I_train)
-                 try:
-                     aux_ps_Target = clf.predict_proba(I_test, domain = 'tgt')        # Predictions in target domain
-                 except:
-                     aux_ps_Target = -2*np.ones((len(I_test), N_classes))
+                 # try:
+                 #     aux_ps_Target = clf.predict_proba(I_test, domain = 'tgt')        # Predictions in target domain
+                 # except:
+                 #     aux_ps_Target = -2*np.ones((len(I_test), N_classes))
             balanced_accuracy_s[i]=balanced_accuracy_score( test_label, aux_ys)
             
             balanced_accuracy_im_s[i]=balanced_accuracy_score( IL_test, aux_ys_Target)
             balanced_accuracy_imtr_s[i]=balanced_accuracy_score( IL_train, aux_ys_Target_tr)
             prediction_matrix[I_test_idx,i] = aux_ys_Target
-            proba_matrix[I_test_idx,i*N_classes:(i+1)*N_classes] = aux_ps_Target
+            # proba_matrix[I_test_idx,i*N_classes:(i+1)*N_classes] = aux_ps_Target
         np.save(prediction_fname,prediction_matrix)
-        np.save(probas_fname,proba_matrix)
+        # np.save(probas_fname,proba_matrix)
         balanced_accuracy[Nt]=balanced_accuracy_s      
         balanced_accuracy_im[Nt]=balanced_accuracy_im_s
         balanced_accuracy_imtr[Nt]=balanced_accuracy_imtr_s

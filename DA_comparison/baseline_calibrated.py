@@ -100,14 +100,7 @@ if not os.path.exists(outdir):
 fname = os.path.join(outdir, f'baseline{concat_tgt_marker}_calibrated.csv')
 params = {} if dataset=='own' else { 'n_jobs':-1,'class_weight':'balanced'}
 print(f'Fitting baseline {concat_tgt_marker} for subject {subject} in region {region_name} using dataset {dataset}...')
-estimator = Pipeline(steps=[
-    ('oversample', RandomOverSampler(random_state=42)),
-    ('clf', CalibratedClassifierCV(
-        base_estimator=LogisticRegression(**params),
-        method='sigmoid',  # or 'isotonic'
-        cv=5
-    ))
-])
+
 remove_noise=True
 
 if not Path(fname).is_file():
@@ -134,7 +127,14 @@ if not Path(fname).is_file():
     
     # print('N voxels: ', Source_X.shape[-1])
     
-    estimator = LogisticRegression
+    
+    estimator = Pipeline(steps=[
+        ('oversample', RandomOverSampler(random_state=42)),
+        ('clf', 
+            LogisticRegression(**params),
+        )
+    ])
+
 
 
     balanced_accuracy, balanced_accuracy_im, balanced_accuracy_imtr=pd.DataFrame(),pd.DataFrame(),pd.DataFrame()
@@ -159,7 +159,7 @@ if not Path(fname).is_file():
         proba_matrix =-1 *np.ones((len(Target_y),NITER*N_classes))
         prediction_matrix =-1 *np.ones((len(Target_y),NITER))
         for i in tqdm(range(NITER)):
-            clf = estimator(**params)
+            clf = estimator
             train = d.Source_train_X[i]
             test = d.Source_test_X[i]
             I_train, I_test, IL_train, IL_test = d.Target_train_X[i], d.Target_test_X[i], d.Target_train_y[i], d.Target_test_y[i]
@@ -194,7 +194,7 @@ if not Path(fname).is_file():
             if concat_tgt==1:
                 train = np.vstack([train,I_train])
                 train_label = np.hstack([train_label,IL_train])
-
+            base_pipeline.fit(train,train_label)
             clf=clf.fit(train,train_label)
             aux_ys = clf.predict(test)                 # Predictions in source domain 
             aux_ys_imag = clf.predict(I_test)          # Predictions in target domain
