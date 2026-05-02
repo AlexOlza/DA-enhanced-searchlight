@@ -3,7 +3,7 @@
 This repository contains the full code for the paper "Domain Adaptation-Enhanced Searchlight: Enabling brain decoding from visual perception to mental imagery" (Olza A., Soto D., Santana R., 2024).
 
 [![OpenSSF Baseline](https://www.bestpractices.dev/projects/12726/baseline)](https://www.bestpractices.dev/projects/12726)
-[![OpenSSF Best Practices](https://www.bestpractices.dev/projects/12726/badge)](https://www.bestpractices.dev/projects/12726)
+[![OpenSSF Best Practices](https://bestpractices.coreinfrastructure.org/projects/12726/badge)](https://bestpractices.coreinfrastructure.org/projects/12726)
 [![fair-software.eu](https://img.shields.io/badge/fair--software.eu-%E2%97%8F%20%20%E2%97%8F%20%20%E2%97%8B%20%20%E2%97%8F%20%20%E2%97%8B-orange)](https://fair-software.eu)
 
 
