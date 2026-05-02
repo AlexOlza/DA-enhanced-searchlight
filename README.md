@@ -1,6 +1,11 @@
 # Domain Adaptation-Enhanced Searchlight: Enabling brain decoding from visual perception to mental imagery
 
 This repository contains the full code for the paper "Domain Adaptation-Enhanced Searchlight: Enabling brain decoding from visual perception to mental imagery" (Olza A., Soto D., Santana R., 2024).
+
+[![fair-software.eu](https://img.shields.io/badge/fair--software.eu-%E2%97%8F%20%20%E2%97%8F%20%20%E2%97%8B%20%20%E2%97%8F%20%20%E2%97%8B-orange)](https://fair-software.eu)
+
+
+
 The paper introduces the :sparkles: DA-enhanced searchlight :sparkles:, which integrates Domain Adaptation (DA) into the searchlight procedure ([Kriegeskorte et al., 2006](https://www.pnas.org/doi/10.1073/pnas.0600244103)) to increase the accuracy of
 local neighborhood classifiers for fMRI data when applied to scenarios with a distribution shift.
 
